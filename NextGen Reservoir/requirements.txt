@@ -1,5 +1,0 @@
-sklearn
-scikit-learn
-python-scikit-learn
-python-sklearn
-python-sklearn-lib
