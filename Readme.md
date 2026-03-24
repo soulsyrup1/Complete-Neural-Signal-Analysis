@@ -173,7 +173,7 @@ effective-rank
 hermitian-matrices
 positive-semidefinite
 
-Manifold dynamics / your newer exploratory layer
+Manifold dynamics
 
 local-curvature
 bootstrap-stability
