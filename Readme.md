@@ -1,4 +1,4 @@
-![Image](Images/00092.png)
+
 <h1 align="center">Complete Neural Signal Analysis Toolbox, browse the folders to see all the tools</h1>
 
 dataset: https://zenodo.org/records/15572614
@@ -189,5 +189,8 @@ near-flat-states
 state-cloud
 analytic-state-cloud
 
-<a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-sa/4.0/88x31.png" /></a><br /><span xmlns:dct="http://purl.org/dc/terms/" property="dct:title">EEG-Chaos-Kuramoto-Neural-Net</span> by <a xmlns:cc="http://creativecommons.org/ns#" href="https://github.com/Synthetic-Intelligence-Labs" property="cc:attributionName" rel="cc:attributionURL">Synthetic Intelligence Labs</a> is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.<br /><br />Permissions beyond the scope of this license may be available at <a xmlns:cc="http://creativecommons.org/ns#" href="https://github.com/Synthetic-Intelligence-Labs" rel="cc:morePermissions">Synthetic Intelligence Labs</a>.
+# License
 
+**[Complete Neural Signal Analysis Toolkit](https://github.com/soulsyrup1/Complete-Neural-Signal-Analysis)** is licensed under the [Creative Commons Attribution-ShareAlike 4.0 International License](https://creativecommons.org/licenses/by-sa/4.0/).
+
+[![CC BY-SA 4.0](https://mirrors.creativecommons.org/presskit/buttons/88x31/svg/by-sa.svg)](https://creativecommons.org/licenses/by-sa/4.0/)
