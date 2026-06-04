@@ -1,25 +1,65 @@
 .ipynb_checkpoints/
-# Ignore all .tmp files
+
+# Temporary files
 *.tmp
-
-# Ignore all files in a temp/ directory
 temp/
-
-# Ignore all visualization files
-/home/vincent/AAA_projects/MVCS/Neuroscience/EEG-tES-Chaos-Neural-Net/Arnold Tongue_files
-/home/vincent/AAA_projects/MVCS/Neuroscience/EEG-tES-Chaos-Neural-Net/EEG Channel Network_files
-/home/vincent/AAA_projects/MVCS/Neuroscience/EEG-tES-Chaos-Neural-Net/Exploration and Analysis EEG_files
-/home/vincent/AAA_projects/MVCS/Neuroscience/EEG-tES-Chaos-Neural-Net/extracted_features
-/home/vincent/AAA_projects/MVCS/Neuroscience/EEG-tES-Chaos-Neural-Net/Images
-/home/vincent/AAA_projects/MVCS/Neuroscience/EEG-tES-Chaos-Neural-Net/Kuramoto Model_files
-/home/vincent/AAA_projects/MVCS/Neuroscience/EEG-tES-Chaos-Neural-Net/lightning_logs
-/home/vincent/AAA_projects/MVCS/Neuroscience/EEG-tES-Chaos-Neural-Net/Literature and Ideas
-/home/vincent/AAA_projects/MVCS/Neuroscience/EEG-tES-Chaos-Neural-Net/Multifractal Analysis_files
-/home/vincent/AAA_projects/MVCS/Neuroscience/EEG-tES-Chaos-Neural-Net/Neural Net_files
-/home/vincent/AAA_projects/MVCS/Neuroscience/EEG-tES-Chaos-Neural-Net/Phase Space_files
-/home/vincent/AAA_projects/MVCS/Neuroscience/EEG-tES-Chaos-Neural-Net/Phase Syncronization Analysis_files
-/home/vincent/AAA_projects/MVCS/Neuroscience/EEG-tES-Chaos-Neural-Net/Recurrence Quantification Analysis_files
-/home/vincent/AAA_projects/MVCS/Neuroscience/EEG-tES-Chaos-Neural-Net/Spectral Analysis_files
-/home/vincent/AAA_projects/MVCS/Neuroscience/EEG-tES-Chaos-Neural-Net/Transfer Entropy_files
-
 temp_concat_chunk_*.pt
+
+# Python cache/build files
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+build/
+dist/
+*.egg-info/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Conda / virtual environments
+.conda/
+conda-meta/
+env/
+envs/
+.env/
+.venv/
+venv/
+ENV/
+miniconda*/
+anaconda*/
+site-packages/
+pip-wheel-metadata/
+
+# Conda environment files you do not want tracked
+*.conda
+*.tar.bz2
+
+# Logs / ML artifacts
+lightning_logs/
+runs/
+wandb/
+mlruns/
+
+# Generated data / model chunks
+extracted_features/
+temp_concat_chunk_*.pt
+
+# Generated visualization folders
+Arnold Tongue_files/
+EEG Channel Network_files/
+Exploration and Analysis EEG_files/
+Images/
+Kuramoto Model_files/
+Literature and Ideas/
+Multifractal Analysis_files/
+Neural Net_files/
+Phase Space_files/
+Phase Syncronization Analysis_files/
+Recurrence Quantification Analysis_files/
+Spectral Analysis_files/
+Transfer Entropy_files/
