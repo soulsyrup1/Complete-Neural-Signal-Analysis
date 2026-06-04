@@ -1,11 +1,32 @@
-.ipynb_checkpoints/
+# =========================
+# Local Conda environments
+# =========================
+.conda*/
+.conda-*/
+.conda-py310/
+conda-meta/
+env/
+envs/
+ENV/
+.venv/
+venv/
+.miniconda*/
+miniconda*/
+.anaconda*/
+anaconda*/
 
-# Temporary files
-*.tmp
-temp/
-temp_concat_chunk_*.pt
+# Python installed packages / local env junk
+site-packages/
+pip-wheel-metadata/
 
+# Conda packages / archives
+*.conda
+*.tar.bz2
+
+
+# =========================
 # Python cache/build files
+# =========================
 __pycache__/
 *.py[cod]
 *$py.class
@@ -18,38 +39,39 @@ build/
 dist/
 *.egg-info/
 
+
+# =========================
 # Jupyter
+# =========================
 .ipynb_checkpoints/
 
-# Conda / virtual environments
-.conda/
-conda-meta/
-env/
-envs/
-.env/
-.venv/
-venv/
-ENV/
-miniconda*/
-anaconda*/
-site-packages/
-pip-wheel-metadata/
 
-# Conda environment files you do not want tracked
-*.conda
-*.tar.bz2
+# =========================
+# Temporary files
+# =========================
+*.tmp
+temp/
+temp_concat_chunk_*.pt
 
+
+# =========================
 # Logs / ML artifacts
+# =========================
 lightning_logs/
 runs/
 wandb/
 mlruns/
 
-# Generated data / model chunks
-extracted_features/
-temp_concat_chunk_*.pt
 
+# =========================
+# Generated data / features
+# =========================
+extracted_features/
+
+
+# =========================
 # Generated visualization folders
+# =========================
 Arnold Tongue_files/
 EEG Channel Network_files/
 Exploration and Analysis EEG_files/
