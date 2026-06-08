@@ -41,6 +41,9 @@
 !/Dynamical_Systems/
 !/Dynamical_Systems/**
 
+!/GUI/
+!/GUI/**
+
 !/Entropy/
 !/Entropy/**
 
@@ -65,9 +68,6 @@
 
 !/Topology/
 !/Topology/**
-
-!/neuro_signal_GUI_v0_9_1/
-!/neuro_signal_GUI_v0_9_1/**
 
 
 # =======================================================
