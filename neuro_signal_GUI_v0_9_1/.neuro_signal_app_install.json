@@ -1,0 +1,7 @@
+{
+  "python_executable": "/home/a/miniconda3/bin/python3",
+  "project_root": "/home/a/projects/Complete-Neural-Signal-Analysis/neuro_signal_importer_skeleton_v0_9_1_speedmouse_backend_dataset_fix",
+  "pyproject_sha256": "1cc4a562549d1fc155117e63b1fe1aa595f97245171ccbe4bcd6091e28725028",
+  "install_extra": ".[all,frontend,live,dev]",
+  "installed_at_unix": 1780936089.576794
+}

@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Neuro Signal App v0.9.0 + SpeedMouse Workbench</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Neuro Signal App <span>v0.9.0 + SpeedMouse Workbench</span></h1>
+      <p>Drag/drop neural files, convert, analyze in SpeedMouse, run live replay, compare groups, and view quick HTML summaries.</p>
+    </div>
+    <div id="serverStatus">checking backend...</div>
+  </header>
+
+  <nav>
+    <button class="tab active" data-tab="importTab">Import / Convert</button>
+    <button class="tab" data-tab="speedmouseTab">SpeedMouse</button>
+    <button class="tab" data-tab="previewTab">Quick Visualizations</button>
+    <button class="tab" data-tab="liveTab">Live Replay</button>
+    <button class="tab" data-tab="compareTab">Compare</button>
+    <button class="tab" data-tab="resultsTab">Results</button>
+  </nav>
+
+  <main>
+    <section id="importTab" class="panel active">
+      <div class="grid two">
+        <div class="card">
+          <h2>1. Drop files or folders</h2>
+          <div id="dropZone" class="drop-zone">
+            <strong>Drop neural signal files here</strong>
+            <p>.mat, .h5, .hdf5, .nwb, .npy, .npz, .csv, .tsv, .xlsx, .edf, .bdf, .set, .vhdr</p>
+            <input id="fileInput" type="file" multiple />
+          </div>
+          <div class="button-row">
+            <button id="chooseFilesBtn">Choose Files</button>
+            <button id="clearFilesBtn">Clear</button>
+            <button id="inspectBtn">Inspect Uploads</button>
+          </div>
+          <ul id="fileList" class="file-list"></ul>
+        </div>
+
+        <div class="card">
+          <h2>2. Options</h2>
+          <label>Output folder on this computer <input id="outputDir" placeholder="blank = app workspace output" /></label>
+          <details open>
+            <summary>Basic conversion options</summary>
+            <label>Sampling rate override Hz <input id="samplingRate" type="number" step="any" placeholder="auto" /></label>
+            <label>Signal path override <input id="signalPath" placeholder="e.g. DSamp.EEGdata or /samples" /></label>
+            <label>Orientation
+              <select id="orientation">
+                <option value="auto">Auto-detect</option>
+                <option value="samples_by_channels">Samples × Channels</option>
+                <option value="channels_by_samples">Channels × Samples</option>
+              </select>
+            </label>
+            <label><input id="includeAux" type="checkbox" /> Keep auxiliary channels</label>
+          </details>
+          <details>
+            <summary>Units and export</summary>
+            <label>Original units <input id="originalUnits" placeholder="auto / ADC / uV / mV / V" /></label>
+            <label>Target units <input id="targetUnits" placeholder="blank = keep" /></label>
+            <label>Scale factor <input id="scaleFactor" type="number" step="any" /></label>
+            <label>Offset <input id="offset" type="number" step="any" /></label>
+            <label>Export format
+              <select id="exportFormat">
+                <option value="npy">NumPy .npy</option>
+                <option value="memmap">Memory-mapped .npy</option>
+                <option value="hdf5">HDF5</option>
+                <option value="zarr">Zarr</option>
+              </select>
+            </label>
+            <label><input id="saveSignalCsv" type="checkbox" /> Also write signal.csv for small files</label>
+          </details>
+          <details>
+            <summary>Optional preprocessing / windows</summary>
+            <label><input id="preprocess" type="checkbox" /> Enable preprocessing copy</label>
+            <label><input id="demean" type="checkbox" /> Demean</label>
+            <label><input id="detrend" type="checkbox" /> Detrend</label>
+            <label>Normalization
+              <select id="normalization">
+                <option value="">None</option>
+                <option value="zscore">Z-score</option>
+                <option value="robust_zscore">Robust z-score</option>
+              </select>
+            </label>
+            <label><input id="makeWindows" type="checkbox" /> Create model windows/tensors</label>
+            <label>Window seconds <input id="windowSeconds" type="number" step="any" value="2" /></label>
+            <label>Step seconds <input id="stepSeconds" type="number" step="any" value="1" /></label>
+          </details>
+          <details open>
+            <summary>SpeedMouse analysis options</summary>
+            <label>Max samples used for offline SpeedMouse analysis <input id="speedmouseMaxSamples" type="number" value="240000" min="1000" step="1000" /></label>
+            <label>Max sliding windows for SpeedMouse geometry <input id="speedmouseMaxWindows" type="number" value="600" min="10" step="10" /></label>
+            <p class="hint">Large files are analyzed offline by the Python backend, then opened in the original SpeedMouse workbench. The raw converted signal is still preserved.</p>
+          </details>
+          <div class="button-row big">
+            <button id="convertBtn" class="primary">Convert</button>
+            <button id="fullAnalyzeBtn" class="accent">Full Pipeline: Convert + Analyze</button>
+            <button id="speedmouseAnalyzeBtn" class="accent">Analyze in SpeedMouse</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+    <section id="speedmouseTab" class="panel">
+      <div class="grid two">
+        <div class="card">
+          <h2>SpeedMouse Workbench</h2>
+          <p>Use the original SpeedMouse workbench as the interactive browser workbench. Our backend converts, computes large/offline features, writes SpeedMouse <code>data.json</code>, and opens SpeedMouse with variable electrode names/counts intact.</p>
+          <div class="button-row big">
+            <button id="openSpeedMouseBtn" class="primary">Open Empty SpeedMouse</button>
+            <button id="analyzeSpeedMouseBtn2" class="accent">Analyze Current Uploads in SpeedMouse</button>
+          </div>
+          <label>Converted recording folders to build SpeedMouse data.json <textarea id="speedmouseConvertedDirs" placeholder="One converted folder per line"></textarea></label>
+          <label>SpeedMouse output folder <input id="speedmouseOutput" placeholder="blank = app workspace output" /></label>
+          <div class="button-row">
+            <button id="speedmouseFromConvertedBtn" class="primary">Build SpeedMouse From Converted Folders</button>
+          </div>
+        </div>
+        <div class="card">
+          <h2>SpeedMouse Live Replay</h2>
+          <p>This streams sample-major JSON frames into the SpeedMouse live panel. It uses the same variable-electrode metadata from <code>channels.csv</code>.</p>
+          <label>signal.npy path <input id="speedmouseLiveSignal" placeholder="/path/to/converted/signal.npy" /></label>
+          <label>channels.csv path <input id="speedmouseLiveChannels" placeholder="optional" /></label>
+          <label>metadata.json path <input id="speedmouseLiveMetadata" placeholder="optional" /></label>
+          <label>Sampling rate Hz <input id="speedmouseLiveFs" type="number" step="any" placeholder="auto / required if missing" /></label>
+          <label>Replay speed <input id="speedmouseLiveSpeed" type="number" step="any" value="1" /></label>
+          <div class="button-row">
+            <button id="openSpeedMouseLiveBtn" class="primary">Open SpeedMouse Live Replay</button>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <h2>SpeedMouse Comparison</h2>
+        <p>Builds one SpeedMouse <code>data.json</code> per recording, a comparison manifest, and a session ZIP. Feature-level comparison is safe across different electrode counts.</p>
+        <div class="button-row">
+          <button id="speedmouseCompareBtn" class="primary">Compare Groups in SpeedMouse</button>
+        </div>
+      </div>
+    </section>
+
+
+
+    <section id="previewTab" class="panel">
+      <div class="grid two">
+        <div class="card">
+          <h2>Quick Dataset Preview</h2>
+          <p>This is our lightweight HTML preview generated from the same SpeedMouse <code>data.json</code>. Use SpeedMouse for the full workbench controls.</p>
+          <div id="previewMeta" class="output-path">No SpeedMouse dataset loaded yet.</div>
+          <canvas id="centroidPreview" class="preview-canvas" width="760" height="300"></canvas>
+          <canvas id="psdPreview" class="preview-canvas" width="760" height="300"></canvas>
+        </div>
+        <div class="card">
+          <h2>Comparison Preview</h2>
+          <p>When you run a SpeedMouse group comparison, this panel lists the generated sessions and opens the original SpeedMouse comparison workbench.</p>
+          <div id="comparisonPreview" class="comparison-preview">No comparison loaded yet.</div>
+          <div class="button-row">
+            <button id="openLatestSpeedMouseBtn" class="primary">Open Latest SpeedMouse Dataset</button>
+            <button id="openLatestSpeedMouseComparisonBtn" class="accent">Open Latest SpeedMouse Comparison</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="liveTab" class="panel">
+      <div class="card">
+        <h2>Live Replay Analysis</h2>
+        <p>Use a converted folder containing <code>signal.npy</code>, <code>channels.csv</code>, and <code>metadata.json</code>. This is prerecorded data replayed through the live backend.</p>
+        <div class="grid two">
+          <label>signal.npy path <input id="liveSignal" placeholder="/path/to/converted/signal.npy" /></label>
+          <label>channels.csv path <input id="liveChannels" placeholder="optional" /></label>
+          <label>metadata.json path <input id="liveMetadata" placeholder="optional" /></label>
+          <label>Sampling rate Hz <input id="liveFs" type="number" step="any" placeholder="auto / required if missing" /></label>
+          <label>Channel profile
+            <select id="liveProfile">
+              <option value="auto">Auto</option>
+              <option value="generated_numeric">Generated numeric</option>
+              <option value="eeg_10_10_common_32">EEG 10-10 common 32</option>
+              <option value="finalspark_32">FinalSpark 32</option>
+            </select>
+          </label>
+        </div>
+        <div class="button-row">
+          <button id="startLiveBtn" class="primary">Start Live Replay</button>
+          <button id="stopLiveBtn">Stop Current Live Job</button>
+          <a class="button-like" href="/live/raw" target="_blank">Open Raw View</a>
+          <a class="button-like" href="/live/spectral" target="_blank">Open Spectral View</a>
+        </div>
+      </div>
+    </section>
+
+    <section id="compareTab" class="panel">
+      <div class="grid two">
+        <div class="card">
+          <h2>Group A</h2>
+          <textarea id="groupA" placeholder="One converted recording folder per line"></textarea>
+        </div>
+        <div class="card">
+          <h2>Group B</h2>
+          <textarea id="groupB" placeholder="One converted recording folder per line"></textarea>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Comparative Analysis</h2>
+        <p>Feature-level comparison is safe across variable electrode counts. Same-channel comparisons should only be used when channel names/layouts match exactly.</p>
+        <label>Comparison output folder <input id="compareOutput" placeholder="blank = app workspace output" /></label>
+        <label>Comparison name <input id="comparisonName" value="comparison" /></label>
+        <div class="button-row">
+          <button id="compareBtn" class="primary">Run Comparative Analysis</button>
+          <button id="speedmouseCompareBtn2" class="accent">Run + Open in SpeedMouse</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="resultsTab" class="panel">
+      <div class="grid two">
+        <div class="card">
+          <h2>Progress Heartbeat</h2>
+          <div id="jobStatus" class="status big-status">No job running.</div>
+          <div class="progress-wrap"><div id="progressBar"></div></div>
+          <div id="currentStep">Current step: none</div>
+          <div id="completedStep">Completed step: none</div>
+          <div class="button-row">
+            <button id="openOutputBtn">Open Output Folder</button>
+            <button id="copyOutputBtn">Copy Output Path</button>
+          </div>
+          <div id="outputPath" class="output-path"></div>
+        </div>
+        <div class="card">
+          <h2>Latest Result</h2>
+          <pre id="resultJson">{}</pre>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Quick Analysis Preview</h2>
+        <p>After <strong>Analyze in SpeedMouse</strong> or <strong>Compare Groups in SpeedMouse</strong>, this area updates automatically and SpeedMouse opens in a new tab.</p>
+        <div id="resultsPreviewMeta" class="output-path">No analysis preview yet.</div>
+        <div class="button-row">
+          <button id="resultsOpenLatestSpeedMouseBtn" class="primary">Open Latest SpeedMouse Dataset</button>
+          <button id="resultsOpenLatestSpeedMouseComparisonBtn" class="accent">Open Latest SpeedMouse Comparison</button>
+        </div>
+      </div>
+      <details class="card">
+        <summary>Detailed log</summary>
+        <pre id="logBox"></pre>
+      </details>
+    </section>
+  </main>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
