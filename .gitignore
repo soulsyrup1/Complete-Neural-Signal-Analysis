@@ -1,3 +1,4 @@
+```gitignore
 # =======================================================
 # WHITELIST-STYLE .gitignore
 # Ignore everything by default, then explicitly include
@@ -13,8 +14,20 @@
 
 # Keep docs / license / small tracked data
 !/LICENSE.md
+!/README.md
 !/Readme.md
+!/INDEXING.md
+!/INDEXING_AND_PUBLICITY_TARGETS.md
 !/stim_data.xlsx
+
+# Keep SEO / indexing / research metadata
+!/robots.txt
+!/sitemap.xml
+!/sitemap.txt
+!/structured-data.json
+!/codemeta.json
+!/CITATION.cff
+!/indexing-report.json
 
 # Keep GitHub workflow directory
 !/.github/
@@ -52,6 +65,9 @@
 
 !/Topology/
 !/Topology/**
+
+!/neuro_signal_GUI_v0_9_1/
+!/neuro_signal_GUI_v0_9_1/**
 
 
 # =======================================================
@@ -147,3 +163,5 @@ mlruns/
 Thumbs.db
 .vscode/
 .idea/
+```
+
