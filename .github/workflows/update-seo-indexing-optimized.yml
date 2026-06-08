@@ -1,0 +1,388 @@
+name: SEO Metadata and Indexing Notifications
+
+on:
+  schedule:
+    - cron: '17 2 * * *' # Daily, staggered to avoid midnight crawler/API spikes
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  # The repository URL the project should promote.
+  SITE_URL: https://github.com/soulsyrup1/Complete-Neural-Signal-Analysis
+  PROJECT_NAME: Complete Neural Signal Analysis
+  PROJECT_SLUG: complete-neural-signal-analysis
+  CONTACT_EMAIL: info@complete_neural_signal_analysis.com
+
+jobs:
+  seo-indexing:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Generate indexing, research-discovery, and metadata files
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 <<'PYGEN'
+          import json
+          import os
+          from datetime import datetime, timezone
+          from pathlib import Path
+          from urllib.parse import urlparse
+
+          site_url = os.environ["SITE_URL"].rstrip("/")
+          project_name = os.environ.get("PROJECT_NAME", "Complete Neural Signal Analysis")
+          project_slug = os.environ.get("PROJECT_SLUG", "complete-neural-signal-analysis")
+          contact_email = os.environ.get("CONTACT_EMAIL", "info@complete_neural_signal_analysis.com")
+          now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S+00:00")
+          host = urlparse(site_url).netloc
+
+          seo_keywords = [
+              "DARPA", "BMBF", "government research", "defense applications", "AI", "cybersecurity",
+              "synthetic intelligence", "advanced technology", "bio-silicon", "AI defense", "AI research",
+              "innovation grants", "public funding", "research funding", "government contracts", "national security",
+              "strategic technologies", "cutting-edge research", "intelligent systems", "emerging technologies",
+              "sustainable development", "military technology", "dual-use technologies", "UKRI", "Horizon Europe",
+              "CERN", "NSF", "NIH", "DoD", "DoE", "cybersecurity R&D", "DARPA challenges",
+              "homeland security", "AI-enabled systems", "edge computing", "bio-cybernetic systems",
+              "hybrid intelligence", "neural interface technologies", "autonomous AI", "neuromorphic computing",
+              "bioinformatics for defense", "AI-assisted decision-making", "critical infrastructure protection",
+              "cross-domain AI solutions", "disruptive technologies", "autonomous systems", "secure AI",
+              "quantum cryptography", "AI ethics", "bio-inspired computing", "deep learning models",
+              "government innovation", "AI policy", "defense technology innovation", "advanced materials research",
+              "sustainable AI", "defense R&D", "precision AI", "high-performance computing", "neural augmentation",
+              "adaptive systems", "critical infrastructure AI", "AI in healthcare", "public-private partnerships",
+              "smart defense", "bio-silicon research",
+              "neural signal analysis", "brain signal processing", "EEG analysis", "EEG signal processing",
+              "brain-computer interface", "BCI research", "computational neuroscience", "neurotechnology",
+              "biosignal processing", "biosignal analytics", "neural data science", "neural decoding",
+              "time-series analysis", "artifact removal", "feature extraction", "spectral analysis",
+              "machine learning for EEG", "AI signal processing", "neuro-AI systems", "biomedical AI",
+              "open-source neuroscience", "research software", "scientific software", "reproducible research",
+              "FAIR research software", "open science tools", "GitHub neuroscience project", "signal processing pipeline",
+              "neural engineering", "cognitive computing", "neuroinformatics", "open research tools"
+          ]
+          seen = set()
+          seo_keywords = [k for k in seo_keywords if not (k.lower() in seen or seen.add(k.lower()))]
+
+          description = (
+              "Complete Neural Signal Analysis is an open-source research software project for neural signal "
+              "analysis, EEG processing, AI signal processing, computational neuroscience, bio-silicon intelligence, "
+              "government research, defense applications, and cybersecurity-oriented advanced analytics."
+          )
+
+          urls = [
+              f"{site_url}/",
+              f"{site_url}/blob/main/README.md",
+              f"{site_url}/releases",
+              f"{site_url}/issues",
+              f"{site_url}/topics/eeg",
+          ]
+
+          Path("README.md").touch()
+          Path("sitemap.txt").write_text("\n".join(urls) + "\n", encoding="utf-8")
+          Path("sitemap.xml").write_text(
+              "\n".join([
+                  "<?xml version='1.0' encoding='UTF-8'?>",
+                  "<urlset xmlns='https://www.sitemaps.org/schemas/sitemap/0.9'>",
+                  *[
+                      f"  <url>\n    <loc>{url}</loc>\n    <lastmod>{now}</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>{'1.0' if url == site_url + '/' else '0.7'}</priority>\n  </url>"
+                      for url in urls
+                  ],
+                  "</urlset>",
+                  "",
+              ]),
+              encoding="utf-8",
+          )
+          Path("robots.txt").write_text(
+              f"User-agent: *\nAllow: /\nSitemap: {site_url}/sitemap.xml\nSitemap: {site_url}/sitemap.txt\n",
+              encoding="utf-8",
+          )
+
+          json_ld = {
+              "@context": "https://schema.org",
+              "@graph": [
+                  {
+                      "@type": "Organization",
+                      "name": project_name,
+                      "url": site_url,
+                      "logo": f"{site_url}/raw/main/images/logo.png",
+                      "contactPoint": [{"@type": "ContactPoint", "email": contact_email, "contactType": "Research and project inquiries"}],
+                      "sameAs": [
+                          "https://www.tiktok.com/@complete_neural_signal_analysis",
+                          "https://www.linkedin.com/company/complete_neural_signal_analysis",
+                          "https://twitter.com/complete_neural_signal_analysis",
+                          "https://www.facebook.com/complete_neural_signal_analysis",
+                      ],
+                  },
+                  {
+                      "@type": "SoftwareSourceCode",
+                      "name": project_name,
+                      "codeRepository": site_url,
+                      "url": site_url,
+                      "description": description,
+                      "programmingLanguage": ["Python", "JavaScript", "Shell"],
+                      "keywords": seo_keywords,
+                      "isAccessibleForFree": True,
+                      "applicationCategory": ["Research software", "Neuroscience", "Signal processing", "Artificial intelligence"],
+                      "audience": [
+                          {"@type": "Audience", "audienceType": "researchers"},
+                          {"@type": "Audience", "audienceType": "government research programs"},
+                          {"@type": "Audience", "audienceType": "defense and cybersecurity research teams"},
+                      ],
+                  },
+                  {
+                      "@type": "Dataset",
+                      "name": f"{project_name} repository metadata",
+                      "description": description,
+                      "url": site_url,
+                      "keywords": seo_keywords,
+                      "creator": {"@type": "Organization", "name": project_name},
+                      "isAccessibleForFree": True,
+                      "distribution": [{"@type": "DataDownload", "contentUrl": f"{site_url}/archive/refs/heads/main.zip", "encodingFormat": "application/zip"}],
+                  },
+              ],
+          }
+          Path("structured-data.json").write_text(json.dumps(json_ld, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+          codemeta = {
+              "@context": "https://doi.org/10.5063/schema/codemeta-2.0",
+              "@type": "SoftwareSourceCode",
+              "name": project_name,
+              "codeRepository": site_url,
+              "issueTracker": f"{site_url}/issues",
+              "description": description,
+              "keywords": seo_keywords,
+              "programmingLanguage": ["Python", "JavaScript", "Shell"],
+              "developmentStatus": "active",
+              "isAccessibleForFree": True,
+              "applicationCategory": "Research software",
+              "softwareSuggestions": "Archive releases with Zenodo, preserve snapshots with Software Heritage, and add a DOI after the first tagged release.",
+          }
+          Path("codemeta.json").write_text(json.dumps(codemeta, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+          Path("CITATION.cff").write_text(
+              "\n".join([
+                  "cff-version: 1.2.0",
+                  f"title: \"{project_name}\"",
+                  "message: \"If you use this software, please cite it using the metadata from this file.\"",
+                  "type: software",
+                  f"url: \"{site_url}\"",
+                  f"repository-code: \"{site_url}\"",
+                  "abstract: \"Open-source research software for neural signal analysis, EEG processing, AI signal processing, computational neuroscience, and related government, defense, and cybersecurity research discovery.\"",
+                  "keywords:",
+                  *[f"  - \"{keyword}\"" for keyword in seo_keywords[:60]],
+                  "authors:",
+                  "  - name: \"Complete Neural Signal Analysis contributors\"",
+                  "date-released: " + datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+                  "",
+              ]),
+              encoding="utf-8",
+          )
+
+          target_lines = [
+              "# Indexing, Research Discovery, and Publicity Targets",
+              "",
+              f"Project URL: {site_url}",
+              f"Generated: {now}",
+              "",
+              "## Automated notifications that are worth using",
+              "",
+              "These are the channels that can actually help crawlers discover changed URLs. They should be used only for URLs you control and only when content changes.",
+              "",
+              "| Target | Method | Notes |",
+              "|---|---|---|",
+              "| Google Search | Google Search Console sitemap submission or Search Console API | Do not use the old unauthenticated Google sitemap ping endpoint. Keep `lastmod` accurate. |",
+              "| Bing | IndexNow and Bing Webmaster Tools URL Submission API | Best automated option for changed URLs when ownership can be verified. |",
+              "| Yandex | IndexNow | Works through the same IndexNow pattern when ownership can be verified. |",
+              "| Baidu | Baidu Search Resource Platform | Use manual/API submission only if you have access and a Chinese-market indexing need. |",
+              "| Naver | Naver Search Advisor | Manual search-console style submission for Korean-market visibility. |",
+              "| Seznam | Seznam webmaster/search submission | Useful mainly for Czech-market visibility. |",
+              "| robots.txt | `Sitemap:` directive | Keep a public sitemap discoverable from the actual hosted website root. |",
+              "| WebSub | Atom/RSS hub notification | Useful only if you publish a feed. |",
+              "",
+              "## Do not curl these as fake `/ping` endpoints",
+              "",
+              "Scopus, Web of Science, IEEE Xplore, PubMed, ScienceDirect, JSTOR, Google Scholar, arXiv, DARPA, NIH, NSF, NASA, DOE, SAM.gov, Grants.gov, national labs, universities, and research-funding websites generally do not accept arbitrary `https://example.org/ping?sitemap=...` requests. Pinging them does not submit your project and can look like low-quality automated traffic.",
+              "",
+              "## Research software and open-science discovery targets",
+              "",
+              "| Target | Use for | Action |",
+              "|---|---|---|",
+              "| Zenodo | DOI and citable GitHub releases | Enable GitHub-Zenodo integration, make a release, add DOI badge and DOI to `CITATION.cff`. |",
+              "| Software Heritage | Long-term source-code preservation and SWHID | Trigger Save Code Now or use a GitHub Action on releases. |",
+              "| Figshare | DOI for software, datasets, figures, reports | Publish release archives or companion datasets when appropriate. |",
+              "| OSF | Open science project page and research collaboration | Create a public project and link the GitHub repository. |",
+              "| OpenAIRE | European open-science discovery | Connect DOI-backed outputs/repositories where eligible. |",
+              "| DataCite/Crossref | DOI metadata propagation | Usually handled through Zenodo/Figshare/institutional repository. |",
+              "| bio.tools | Life-science/bioinformatics tool discovery | Submit if the project is positioned as life-science or biomedical software. |",
+              "| Papers with Code | ML paper + code discovery | Add only when you have a paper/preprint and reproducible results or benchmarks. |",
+              "| arXiv / preprint servers | Research paper discovery | Publish a methods/software paper that links to the repository. |",
+              "| Google Dataset Search | Dataset visibility | Add schema.org `Dataset` JSON-LD to a public landing page. |",
+              "| GitHub Topics | GitHub-native discovery | Add topics: `neuroscience`, `eeg`, `signal-processing`, `bci`, `machine-learning`, `computational-neuroscience`, `neurotechnology`, `open-science`, `research-software`. |",
+              "| ORCID | Researcher profile discoverability | Add the DOI/software output to contributor ORCID records after Zenodo/Figshare release. |",
+              "",
+              "## Government and funder repositories: submit only when eligible",
+              "",
+              "These are not generic publicity targets. Use them only if the project is connected to a funded publication, grant, dataset, or official deliverable.",
+              "",
+              "| Target | Eligibility note |",
+              "|---|---|",
+              "| NIH / PubMed Central / Europe PMC | Biomedical manuscripts and grant-related outputs. |",
+              "| NASA STI / PubSpace | NASA-funded publications and associated data. |",
+              "| DOE OSTI / DOE CODE | DOE-funded publications, datasets, and software. |",
+              "| NSF Public Access Repository | NSF-funded accepted manuscripts and outputs. |",
+              "| Defense Technical Information Center | Eligible defense-funded technical reports and outputs. |",
+              "| EU Open Research / CORDIS / OpenAIRE | EU-funded projects, publications, data, and software outputs. |",
+              "",
+              "## Recommended GitHub repository improvements",
+              "",
+              "1. Add a concise `README.md` opening paragraph with the phrases: neural signal analysis, EEG analysis, AI signal processing, computational neuroscience, BCI research, open-source neuroscience, research software.",
+              "2. Add `CITATION.cff`, `codemeta.json`, `LICENSE`, `CONTRIBUTING.md`, `SECURITY.md`, and release notes.",
+              "3. Create a tagged GitHub release, connect it to Zenodo, then add the DOI badge and DOI metadata.",
+              "4. Use Software Heritage Save Code Now for release snapshots.",
+              "5. Use IndexNow only for a real website or GitHub Pages/custom domain where you can host the IndexNow key file under the same host.",
+              "",
+          ]
+          Path("INDEXING_AND_PUBLICITY_TARGETS.md").write_text("\n".join(target_lines), encoding="utf-8")
+
+          report = {
+              "generated_at": now,
+              "site_url": site_url,
+              "host": host,
+              "urls": urls,
+              "notes": [
+                  "The old Google sitemap ping endpoint is not used.",
+                  "IndexNow requires a key file hosted on the same host as the submitted URLs.",
+                  "GitHub repository URLs use github.com, so IndexNow ownership verification normally requires a GitHub Pages/custom domain instead.",
+              ],
+          }
+          Path("indexing-report.json").write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+          PYGEN
+
+      - name: Commit metadata and discovery files
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add README.md sitemap.xml sitemap.txt robots.txt structured-data.json codemeta.json CITATION.cff INDEXING_AND_PUBLICITY_TARGETS.md indexing-report.json
+          if git diff --cached --quiet; then
+            echo "No metadata or discovery changes to commit."
+          else
+            git commit -m "Improve indexing metadata and research discovery targets"
+            git push
+          fi
+
+      - name: Notify supported indexers without spam pings
+        shell: bash
+        continue-on-error: true
+        env:
+          INDEXNOW_KEY: ${{ secrets.INDEXNOW_KEY }}
+          INDEXNOW_KEY_LOCATION: ${{ secrets.INDEXNOW_KEY_LOCATION }}
+        run: |
+          set -euo pipefail
+          python3 <<'PYNOTIFY'
+          import json
+          import os
+          import subprocess
+          from datetime import datetime, timezone
+          from pathlib import Path
+          from urllib.parse import urlparse
+
+          site_url = os.environ["SITE_URL"].rstrip("/")
+          parsed = urlparse(site_url)
+          host = parsed.netloc
+          key = os.environ.get("INDEXNOW_KEY", "").strip()
+          key_location = os.environ.get("INDEXNOW_KEY_LOCATION", "").strip()
+
+          urls = [line.strip() for line in Path("sitemap.txt").read_text(encoding="utf-8").splitlines() if line.strip()]
+          report = {
+              "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S+00:00"),
+              "site_url": site_url,
+              "host": host,
+              "submitted": [],
+              "skipped": [],
+              "advice": [],
+          }
+
+          report["skipped"].append({
+              "target": "Google unauthenticated sitemap ping",
+              "reason": "Deprecated/low-value. Use Google Search Console or Search Console API with verified ownership instead.",
+          })
+
+          if not key:
+              report["skipped"].append({
+                  "target": "IndexNow",
+                  "reason": "Add repository secret INDEXNOW_KEY to enable IndexNow submissions for a verified website host.",
+              })
+          elif host == "github.com" and not key_location:
+              report["skipped"].append({
+                  "target": "IndexNow",
+                  "reason": "Cannot verify ownership of github.com from a repository. Use GitHub Pages/custom domain and set INDEXNOW_KEY_LOCATION.",
+              })
+          else:
+              payload = {"host": host, "key": key, "urlList": urls}
+              if key_location:
+                  payload["keyLocation"] = key_location
+              Path("indexnow-payload.json").write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+              for endpoint in ["https://api.indexnow.org/indexnow", "https://www.bing.com/indexnow"]:
+                  try:
+                      result = subprocess.run(
+                          ["curl", "--silent", "--show-error", "--location", "--max-time", "20", "--write-out", "%{http_code}", "--output", "/tmp/indexnow-response.txt", "--header", "Content-Type: application/json; charset=utf-8", "--data", json.dumps(payload), endpoint],
+                          check=False,
+                          text=True,
+                          capture_output=True,
+                      )
+                      body = Path("/tmp/indexnow-response.txt").read_text(encoding="utf-8", errors="replace") if Path("/tmp/indexnow-response.txt").exists() else ""
+                      report["submitted"].append({"target": endpoint, "status_code": result.stdout.strip(), "stderr": result.stderr.strip(), "response_excerpt": body[:500]})
+                  except Exception as exc:
+                      report["submitted"].append({"target": endpoint, "error": str(exc)})
+
+          report["advice"].extend([
+              "Submit sitemap.xml manually in Google Search Console for the verified property.",
+              "Submit sitemap.xml in Bing Webmaster Tools and verify IndexNow receipt there.",
+              "For research discovery, prioritize DOI metadata, CITATION.cff, CodeMeta, Software Heritage, and Zenodo/Figshare over arbitrary curl pings.",
+          ])
+          Path("indexing-report.json").write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+          print(json.dumps(report, ensure_ascii=False, indent=2))
+          PYNOTIFY
+
+      - name: Commit indexing report
+        shell: bash
+        run: |
+          set -euo pipefail
+          git add indexing-report.json indexnow-payload.json 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "No indexing report changes to commit."
+          else
+            git commit -m "Update indexing notification report"
+            git push
+          fi
+
+      - name: Run Lighthouse SEO report
+        shell: bash
+        continue-on-error: true
+        run: |
+          set -u
+          npx --yes lighthouse "${SITE_URL}" \
+            --output=json \
+            --output-path=./lighthouse-report.json \
+            --chrome-flags="--headless --no-sandbox" \
+            --only-categories=performance,seo,best-practices,accessibility || true
+
+      - name: Commit Lighthouse report
+        shell: bash
+        run: |
+          set -euo pipefail
+          git add lighthouse-report.json || true
+          if git diff --cached --quiet; then
+            echo "No Lighthouse report changes to commit."
+          else
+            git commit -m "Update Lighthouse SEO report"
+            git push
+          fi
