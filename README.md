@@ -20,14 +20,14 @@ Browse the folders to see the full method library and experimental tools.
 
 The current no-code GUI and integrated web application are documented here:
 
-**[`GUI/neuro_signal_importer_v0_9_2/README.md`](GUI/neuro_signal_importer_v0_9_2/README.md)**
+**[`GUI/neuro_signal_importer_analyzer/README.md`](GUI/neuro_signal_importer_analyzer/README.md)**
 
 Start with that README if you want the latest drag-and-drop workflow, automatic installation checks, HTML/FastAPI frontend, neural-signal conversion backend, variable-electrode support, integrated SpeedMouse workbench, live replay, offline analysis, and comparison workflows.
 
 Recommended launch:
 
 ```bash
-cd GUI/neuro_signal_importer_v0_9_2
+cd GUI/neuro_signal_importer_analyzer
 python3 run_neuro_signal_app.py
 ```
 
@@ -53,7 +53,7 @@ Researchers can use this repository as a reference toolbox, method library, educ
 
 ## GUI Capabilities
 
-The GUI/web app documentation lives in `GUI/neuro_signal_importer_v0_9_2/README.md`. In brief, the current interface supports:
+The GUI/web app documentation lives in `GUI/neuro_signal_importer_analyzer/README.md`. In brief, the current interface supports:
 
 - Drag-and-drop neural signal files and folders
 - Automatic installation and library checks
@@ -119,7 +119,7 @@ The toolbox and GUI are designed around flexible neural signal workflows. Depend
 
 | Folder / Area | Description |
 |---|---|
-| `GUI/neuro_signal_importer_v0_9_2/` | Current no-code GUI/web app. See its README for detailed usage, installation, SpeedMouse integration, conversion, live replay, and comparison workflows. |
+| `GUI/neuro_signal_importer_analyzer/` | Current no-code GUI/web app. See its README for detailed usage, installation, SpeedMouse integration, conversion, live replay, and comparison workflows. |
 | `Data_Loading_and_Variable_Assigning_files/` | Data loading, variable assignment, signal preparation, and analysis setup. |
 | `Dynamical_Systems/` | Dynamical systems, nonlinear dynamics, chaos, Lyapunov methods, attractor reconstruction, nonlinear coupling, and chaos control. |
 | `Entropy/` | Entropy measures, complexity measures, multiscale entropy, sample entropy, approximate entropy, transfer entropy, entropy rate, and feature extraction. |
@@ -173,7 +173,7 @@ This toolbox may be useful for:
 
 ## Links
 
-- Current GUI README: [`GUI/neuro_signal_importer_v0_9_2/README.md`](GUI/neuro_signal_importer_v0_9_2/README.md)
+- Current GUI README: [`GUI/neuro_signal_importer_analyzer/README.md`](GUI/neuro_signal_importer_analyzer/README.md)
 - SpeedMouse software: https://github.com/MikMikMiller/SpeedMouse
 - Dataset: https://zenodo.org/records/15572614
 - Repository: https://github.com/soulsyrup1/Complete-Neural-Signal-Analysis
@@ -555,7 +555,7 @@ SpeedMouse software: https://github.com/MikMikMiller/SpeedMouse
 
 SpeedMouse is integrated into the current GUI/web application workflow. See the GUI README for current details:
 
-[`GUI/neuro_signal_importer_v0_9_2/README.md`](GUI/neuro_signal_importer_v0_9_2/README.md)
+[`GUI/neuro_signal_importer_analyzer/README.md`](GUI/neuro_signal_importer_analyzer/README.md)
 
 ---
 
