@@ -41,9 +41,6 @@
 !/Dynamical_Systems/
 !/Dynamical_Systems/**
 
-!/GUI/
-!/GUI/**
-
 !/Entropy/
 !/Entropy/**
 
@@ -164,4 +161,8 @@ Thumbs.db
 .vscode/
 .idea/
 ```
-
+# =======================================================
+# Always keep the complete GUI folder and all contents
+# =======================================================
+!/GUI/
+!/GUI/**
