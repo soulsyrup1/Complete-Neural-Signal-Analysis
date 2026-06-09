@@ -5,7 +5,7 @@
   "url": "https://soulsyrup1.github.io/Complete-Neural-Signal-Analysis/",
   "codeRepository": "https://github.com/soulsyrup1/Complete-Neural-Signal-Analysis",
   "license": "https://creativecommons.org/licenses/by-sa/4.0/",
-  "description": "Open-source EEG, neural signal processing, biomedical signal processing, nonlinear time-series, spectral, entropy, fractal, topology, geometry, manifold, and quantum-inspired analysis toolbox with a no-code GUI.",
+  "description": "Open-source EEG, neural signal processing, biomedical signal processing, nonlinear time-series, spectral, entropy, fractal, topology, geometry, manifold, and quantum-inspired analysis toolbox with a no-code GUI for flexible user-provided neural signal workflows.",
   "keywords": [
     "EEG analysis",
     "neural signal processing",
@@ -19,7 +19,11 @@
     "topological data analysis",
     "Riemannian geometry",
     "quantum-inspired analysis",
-    "NeuroMouse"
+    "NeuroMouse",
+    "flexible neural signal files",
+    "multichannel time-series data",
+    "custom neural signal structures",
+    "NeuroMouse Workbench"
   ],
   "softwareRequirements": "Python, browser",
   "sameAs": [
