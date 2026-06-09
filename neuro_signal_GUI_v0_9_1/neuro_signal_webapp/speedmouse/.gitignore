@@ -1,7 +1,0 @@
-source-data/
-node_modules/
-.env
-.env.*
-.DS_Store
-__pycache__/
-*.pyc
