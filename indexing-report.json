@@ -1,0 +1,17 @@
+{
+  "generated_at": "2026-06-09T06:29:17+00:00",
+  "site_url": "https://github.com/soulsyrup1/Complete-Neural-Signal-Analysis",
+  "host": "github.com",
+  "urls": [
+    "https://github.com/soulsyrup1/Complete-Neural-Signal-Analysis/",
+    "https://github.com/soulsyrup1/Complete-Neural-Signal-Analysis/blob/main/README.md",
+    "https://github.com/soulsyrup1/Complete-Neural-Signal-Analysis/releases",
+    "https://github.com/soulsyrup1/Complete-Neural-Signal-Analysis/issues",
+    "https://github.com/soulsyrup1/Complete-Neural-Signal-Analysis/topics/eeg"
+  ],
+  "notes": [
+    "The old Google sitemap ping endpoint is not used.",
+    "IndexNow requires a key file hosted on the same host as the submitted URLs.",
+    "GitHub repository URLs use github.com, so IndexNow ownership verification normally requires a GitHub Pages/custom domain instead."
+  ]
+}
