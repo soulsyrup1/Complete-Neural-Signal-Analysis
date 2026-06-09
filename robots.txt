@@ -1,4 +1,0 @@
-User-agent: *
-Allow: /
-Sitemap: https://github.com/soulsyrup1/Complete-Neural-Signal-Analysis/sitemap.xml
-Sitemap: https://github.com/soulsyrup1/Complete-Neural-Signal-Analysis/sitemap.txt
