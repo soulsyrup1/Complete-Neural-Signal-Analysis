@@ -22,7 +22,7 @@ The current no-code GUI and integrated web application are documented here:
 
 **[`GUI/neuro_signal_importer_analyzer/README.md`](GUI/neuro_signal_importer_analyzer/README.md)**
 
-Start with that README if you want the latest drag-and-drop workflow, automatic installation checks, HTML/FastAPI frontend, neural-signal conversion backend, variable-electrode support, integrated SpeedMouse workbench, live replay, offline analysis, and comparison workflows.
+Start with that README if you want the latest drag-and-drop workflow, automatic installation checks, HTML/FastAPI frontend, neural-signal conversion backend, variable-electrode support, integrated NeuroMouse workbench, live replay, offline analysis, and comparison workflows.
 
 Recommended launch:
 
@@ -39,7 +39,7 @@ The launcher checks whether the software and required Python libraries are insta
 
 ### Option 1: Use the No-Code GUI
 
-Use the GUI folder above for the current end-to-end interface. It is designed for users who want to load neural recordings, convert files, analyze data, open SpeedMouse visualizations, run live replay, and compare datasets without writing code.
+Use the GUI folder above for the current end-to-end interface. It is designed for users who want to load neural recordings, convert files, analyze data, open NeuroMouse visualizations, run live replay, and compare datasets without writing code.
 
 ### Option 2: Browse the Toolbox Folders
 
@@ -63,8 +63,8 @@ The GUI/web app documentation lives in `GUI/neuro_signal_importer_analyzer/READM
 - Offline analysis and feature extraction
 - Live replay of prerecorded recordings
 - Group and dataset comparison workflows
-- Integrated SpeedMouse workbench for interactive visualization
-- Backend-generated SpeedMouse datasets instead of demo data
+- Integrated NeuroMouse workbench for interactive visualization
+- Backend-generated NeuroMouse datasets instead of demo data
 - Output folders with converted files, metadata, provenance, quality reports, and analysis products
 
 ---
@@ -119,7 +119,7 @@ The toolbox and GUI are designed around flexible neural signal workflows. Depend
 
 | Folder / Area | Description |
 |---|---|
-| `GUI/neuro_signal_importer_analyzer/` | Current no-code GUI/web app. See its README for detailed usage, installation, SpeedMouse integration, conversion, live replay, and comparison workflows. |
+| `GUI/neuro_signal_importer_analyzer/` | Current no-code GUI/web app. See its README for detailed usage, installation, NeuroMouse integration, conversion, live replay, and comparison workflows. |
 | `Data_Loading_and_Variable_Assigning_files/` | Data loading, variable assignment, signal preparation, and analysis setup. |
 | `Dynamical_Systems/` | Dynamical systems, nonlinear dynamics, chaos, Lyapunov methods, attractor reconstruction, nonlinear coupling, and chaos control. |
 | `Entropy/` | Entropy measures, complexity measures, multiscale entropy, sample entropy, approximate entropy, transfer entropy, entropy rate, and feature extraction. |
@@ -174,7 +174,7 @@ This toolbox may be useful for:
 ## Links
 
 - Current GUI README: [`GUI/neuro_signal_importer_analyzer/README.md`](GUI/neuro_signal_importer_analyzer/README.md)
-- SpeedMouse software: https://github.com/MikMikMiller/SpeedMouse
+- NeuroMouse software: https://github.com/UlaYuga/NeuroMouse
 - Dataset: https://zenodo.org/records/15572614
 - Repository: https://github.com/soulsyrup1/Complete-Neural-Signal-Analysis
 
@@ -551,9 +551,9 @@ This dataset can support reproducible testing, benchmarking, neural signal analy
 
 ## Related Software
 
-SpeedMouse software: https://github.com/MikMikMiller/SpeedMouse
+NeuroMouse software: https://github.com/UlaYuga/NeuroMouse
 
-SpeedMouse is integrated into the current GUI/web application workflow. See the GUI README for current details:
+NeuroMouse is integrated into the current GUI/web application workflow. See the GUI README for current details:
 
 [`GUI/neuro_signal_importer_analyzer/README.md`](GUI/neuro_signal_importer_analyzer/README.md)
 

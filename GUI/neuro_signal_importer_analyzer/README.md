@@ -1,7 +1,9 @@
-# Neuro Signal Importer + SpeedMouse Workbench
+# Neuro Signal Importer + NeuroMouse Workbench
 
 **Version:** `0.9.3-readme-update`  
-**Purpose:** Convert, standardize, analyze, replay, and visualize continuous neural signal data from many file formats using a local Python backend and an HTML/SpeedMouse browser workbench.
+**Purpose:** Convert, standardize, analyze, replay, and visualize continuous neural signal data from many file formats using a local Python backend and an HTML/NeuroMouse browser workbench.
+
+**NeuroMouse source:** https://github.com/UlaYuga/NeuroMouse
 
 This project is designed for **continuous neural signal data**: EEG, ECoG, iEEG, MEA, organoid recordings, FinalSpark-style data, Cortical Labs-style data, HDF5/NWB-style recordings, MATLAB structures, NumPy arrays, tabular exports, and related neurophysiology signal files.
 
@@ -26,23 +28,26 @@ The system now has four major layers:
    raw neural file/folder → canonical converted recording
 
 2. Offline analysis backend
-   converted recording → features, summaries, SpeedMouse-compatible data.json
+   converted recording → features, summaries, NeuroMouse-compatible data.json
 
 3. Live replay backend
    converted signal.npy → prerecorded live stream + raw/spectral WebSocket views
 
-4. HTML frontend + original SpeedMouse workbench
+4. HTML frontend + NeuroMouse workbench
    drag/drop, convert, analyze, compare, live replay, interactive visualization
 ```
+
+
+> **Compatibility note:** Some internal routes, command options, filenames, and package folders still use the lowercase `speedmouse` identifier for backward compatibility with the existing backend code. User-facing documentation and project links now refer to **NeuroMouse**.
 
 The two main browser pages are:
 
 ```text
 http://127.0.0.1:8787/             Neuro Signal launcher/frontend
-http://127.0.0.1:8787/speedmouse/  Original SpeedMouse workbench, integrated
+http://127.0.0.1:8787/speedmouse/  NeuroMouse workbench, integrated
 ```
 
-The launcher page is our control center. SpeedMouse is the interactive neural signal visualization and comparison workbench.
+The launcher page is our control center. NeuroMouse is the interactive neural signal visualization and comparison workbench.
 
 ---
 
@@ -57,7 +62,7 @@ This project is currently focused on:
 - offline feature extraction
 - live replay from prerecorded recordings
 - feature-level dataset/group comparison
-- SpeedMouse-compatible visualization outputs
+- NeuroMouse-compatible visualization outputs
 
 This project intentionally does **not** currently focus on:
 
@@ -87,7 +92,7 @@ The launcher script automatically:
 5. Waits until the server health check passes.
 6. Opens the browser.
 
-By default, it opens the launcher app. Depending on launch options, it can also open SpeedMouse.
+By default, it opens the launcher app. Depending on launch options, it can also open NeuroMouse.
 
 ### Launcher options
 
@@ -252,7 +257,7 @@ The launcher frontend supports:
 - path-based conversion for larger files/folders
 - heartbeat progress from backend pipeline stages
 - live replay setup
-- SpeedMouse analysis setup
+- NeuroMouse analysis setup
 - group comparison setup
 - quick HTML preview plots
 - output-folder and report links
@@ -263,9 +268,9 @@ The launcher frontend supports:
 Import / Convert
   Convert raw files into canonical signal.npy + metadata outputs.
 
-SpeedMouse
-  Analyze current uploads in SpeedMouse, build data.json from converted folders,
-  or launch live replay into SpeedMouse.
+NeuroMouse
+  Analyze current uploads in NeuroMouse, build data.json from converted folders,
+  or launch live replay into NeuroMouse.
 
 Live Replay
   Replay a converted recording like a live stream.
@@ -274,14 +279,18 @@ Compare
   Compare one dataset/group against another using feature-level summaries.
 
 Results
-  Open output folders, reports, generated data.json, and SpeedMouse links.
+  Open output folders, reports, generated data.json, and NeuroMouse links.
 ```
 
 ---
 
-## Original SpeedMouse Integration
+## NeuroMouse Integration
 
-The project includes the **original SpeedMouse workbench files** that were provided by the user.
+The project integrates the **NeuroMouse workbench**.
+
+NeuroMouse source: https://github.com/UlaYuga/NeuroMouse
+
+The local integration keeps reference and served copies inside the GUI package so the backend can generate compatible visualization datasets.
 
 They are stored in two places:
 
@@ -290,25 +299,25 @@ neuro_signal_webapp/speedmouse/    served integrated copy
 vendor/speedmouse_original/        untouched reference copy
 ```
 
-SpeedMouse is served at:
+NeuroMouse is served at:
 
 ```text
 http://127.0.0.1:8787/speedmouse/
 ```
 
-The integrated SpeedMouse copy has minimal compatibility patches so it can:
+The integrated NeuroMouse copy has minimal compatibility patches so it can:
 
 - load backend-generated `data.json` through a query parameter
 - distinguish demo data from backend-generated datasets
 - show a visible backend-dataset banner only for real backend outputs
 - accept variable channel counts instead of requiring 32 channels
-- load SpeedMouse comparison manifests
-- connect to SpeedMouse-compatible live replay WebSocket streams
+- load NeuroMouse comparison manifests
+- connect to NeuroMouse-compatible live replay WebSocket streams
 - fall back to generic channel/electrode layouts when EEG 10-20/10-10 names are not available
 
 ---
 
-## Analyze in SpeedMouse
+## Analyze in NeuroMouse
 
 This is the recommended workflow for interactive offline analysis.
 
@@ -316,7 +325,7 @@ In the launcher:
 
 1. Drag/drop a raw neural file or files.
 2. Choose options if needed.
-3. Click **Analyze in SpeedMouse**.
+3. Click **Analyze in NeuroMouse**.
 
 The backend then:
 
@@ -327,19 +336,19 @@ convert if needed
     ↓
 load signal.npy + channels.csv + metadata.json
     ↓
-compute offline SpeedMouse features
+compute offline NeuroMouse features
     ↓
 write outputs/<job_id>/speedmouse/data.json
     ↓
-open SpeedMouse with:
+open NeuroMouse with:
     /speedmouse/?dataset=/api/jobs/<job_id>/speedmouse/data.json&backend_job=<job_id>&backend=1
 ```
 
-Important: SpeedMouse still plots a `data.json` file, because that is its native plotting format. The difference is that the `data.json` should now be **generated from your dragged/converted data**, not the bundled demo file.
+Important: NeuroMouse still plots a `data.json` file, because that is its native plotting format. The difference is that the `data.json` should now be **generated from your dragged/converted data**, not the bundled demo file.
 
 ### How to confirm it loaded your data
 
-A correct backend-generated SpeedMouse page should show a source like:
+A correct backend-generated NeuroMouse page should show a source like:
 
 ```text
 /api/jobs/<job_id>/speedmouse/data.json
@@ -351,15 +360,15 @@ It should not show:
 /speedmouse/data/data.json
 ```
 
-If the source is `/speedmouse/data/data.json`, you are looking at the bundled SpeedMouse demo dataset, not the generated backend dataset.
+If the source is `/speedmouse/data/data.json`, you are looking at the bundled NeuroMouse demo dataset, not the generated backend dataset.
 
-Use the **Open generated SpeedMouse dataset** link in the launcher Results tab after analysis completes.
+Use the **Open generated NeuroMouse dataset** link in the launcher Results tab after analysis completes.
 
 ---
 
-## SpeedMouse Data Output
+## NeuroMouse Data Output
 
-The backend-generated SpeedMouse folder typically contains:
+The backend-generated NeuroMouse folder typically contains:
 
 ```text
 speedmouse/
@@ -367,7 +376,7 @@ speedmouse/
 └── speedmouse_manifest.json
 ```
 
-`data.json` includes SpeedMouse-compatible offline analysis arrays such as:
+`data.json` includes NeuroMouse-compatible offline analysis arrays such as:
 
 ```text
 meta
@@ -378,11 +387,11 @@ channel_summary
 optional channel/group summaries
 ```
 
-For large recordings, the backend samples/limits offline windows according to the SpeedMouse analysis options in the launcher. The original raw converted `signal.npy` is still preserved.
+For large recordings, the backend samples/limits offline windows according to the NeuroMouse analysis options in the launcher. The original raw converted `signal.npy` is still preserved.
 
 ---
 
-## Live Replay in SpeedMouse
+## Live Replay in NeuroMouse
 
 Live replay is for prerecorded data streamed like a live source.
 
@@ -393,12 +402,12 @@ converted signal.npy
     ↓
 variable-electrode live backend
     ↓
-SpeedMouse-compatible WebSocket sample stream
+NeuroMouse-compatible WebSocket sample stream
     ↓
-SpeedMouse live source view
+NeuroMouse live source view
 ```
 
-The SpeedMouse live WebSocket endpoint uses metadata-driven frames:
+The NeuroMouse live WebSocket endpoint uses metadata-driven frames:
 
 ```text
 channel_names
@@ -407,7 +416,7 @@ sampling_rate_hz
 samples
 ```
 
-This allows SpeedMouse to render data with any channel count, not only 32-channel EEG.
+This allows NeuroMouse to render data with any channel count, not only 32-channel EEG.
 
 ---
 
@@ -428,10 +437,10 @@ subject/session A vs subject/session B
 For comparisons, the backend can:
 
 1. Convert raw files if needed.
-2. Build SpeedMouse-compatible `data.json` files for each recording.
+2. Build NeuroMouse-compatible `data.json` files for each recording.
 3. Compute feature-level summaries.
 4. Build a comparison manifest.
-5. Open SpeedMouse on the comparison.
+5. Open NeuroMouse on the comparison.
 
 This is safer than direct channel-to-channel comparison when datasets have different electrode counts or names.
 
@@ -548,13 +557,13 @@ neuro_importer_live/spectral_visualizer_variable.html
 
 ## Backend API Summary
 
-The local FastAPI server exposes endpoints used by the HTML launcher and SpeedMouse integration.
+The local FastAPI server exposes endpoints used by the HTML launcher and NeuroMouse integration.
 
 Important routes include:
 
 ```text
 GET  /                                  launcher frontend
-GET  /speedmouse/                       original SpeedMouse workbench
+GET  /speedmouse/                       NeuroMouse workbench
 GET  /api/health                        server health/version/workspace
 POST /api/jobs/convert-upload           convert uploaded files
 POST /api/jobs/convert-paths            convert path-based files/folders
@@ -568,7 +577,7 @@ GET  /api/jobs/<job_id>
 GET  /api/jobs/<job_id>/speedmouse/data.json
 GET  /api/jobs/<job_id>/speedmouse/manifest.json
 WS   /api/jobs/<job_id>/events          heartbeat progress events
-WS   /ws/speedmouse/live                SpeedMouse-compatible live sample stream
+WS   /ws/speedmouse/live                NeuroMouse-compatible live sample stream
 GET  /api/file?path=...                 serve generated output file
 GET  /api/open-output?path=...          ask OS to open output folder
 ```
@@ -625,9 +634,9 @@ These include information such as:
 
 ## Troubleshooting
 
-### SpeedMouse still shows the demo data
+### NeuroMouse still shows the demo data
 
-Check the SpeedMouse banner/source.
+Check the NeuroMouse banner/source.
 
 Correct generated backend data source:
 
@@ -641,7 +650,7 @@ Wrong demo data source:
 /speedmouse/data/data.json
 ```
 
-If you see the demo path, use the **Open generated SpeedMouse dataset** link in the launcher Results tab after **Analyze in SpeedMouse** completes.
+If you see the demo path, use the **Open generated NeuroMouse dataset** link in the launcher Results tab after **Analyze in NeuroMouse** completes.
 
 ### Browser did not open automatically
 
@@ -702,19 +711,19 @@ neuro_importer_analysis/
   offline feature extraction and comparative analysis
 
 neuro_importer_speedmouse/
-  SpeedMouse-compatible data.json builder, comparison packager, live bridge
+  NeuroMouse-compatible data.json builder, comparison packager, live bridge
 
 neuro_signal_webapp/
-  local FastAPI app, launcher frontend, integrated served SpeedMouse copy
+  local FastAPI app, launcher frontend, integrated served NeuroMouse copy
 
 neuro_signal_webapp/static/
   our HTML launcher frontend
 
 neuro_signal_webapp/speedmouse/
-  integrated original SpeedMouse workbench with compatibility patches
+  integrated NeuroMouse workbench with compatibility patches
 
 vendor/speedmouse_original/
-  untouched reference copy of the uploaded original SpeedMouse files
+  compatibility reference copy for the integrated NeuroMouse workbench
 
 run_neuro_signal_app.py
   install-check, server startup, browser launcher
@@ -740,7 +749,7 @@ The test suite covers:
 - heartbeat progress events
 - HTML/FastAPI app routes
 - variable-electrode live backend
-- SpeedMouse integration routes
+- NeuroMouse integration routes
 - progress-event regression handling
 
 ---
@@ -753,10 +762,10 @@ For a normal user:
 1. Run: python3 run_neuro_signal_app.py
 2. Browser opens at http://127.0.0.1:8787/
 3. Drag/drop raw neural file(s).
-4. Click Analyze in SpeedMouse.
+4. Click Analyze in NeuroMouse.
 5. Wait for heartbeat progress to finish.
-6. Use the generated SpeedMouse dataset link in Results.
-7. Explore the data in SpeedMouse.
+6. Use the generated NeuroMouse dataset link in Results.
+7. Explore the data in NeuroMouse.
 ```
 
 For development/CLI:
@@ -764,7 +773,7 @@ For development/CLI:
 ```text
 1. Convert raw files with neuro-import.
 2. Inspect converted signal.npy / channels.csv / metadata.json.
-3. Build SpeedMouse data.json through the launcher or backend API.
+3. Build NeuroMouse data.json through the launcher or backend API.
 4. Run live replay or comparison as needed.
 ```
 
@@ -778,10 +787,10 @@ This is the first complete integrated version where:
 raw neural files/folders
     → canonical conversion
     → variable-electrode metadata
-    → offline SpeedMouse-compatible analysis
-    → integrated original SpeedMouse visualization
+    → offline NeuroMouse-compatible analysis
+    → integrated NeuroMouse visualization
     → optional live replay
     → optional group comparison
 ```
 
-The system is still under active development, but the architecture is now set up so our backend can feed the original SpeedMouse workbench while preserving our own HTML launcher/frontend and variable-electrode neuro-signal pipeline.
+The system is still under active development, but the architecture is now set up so our backend can feed the NeuroMouse workbench while preserving our own HTML launcher/frontend and variable-electrode neuro-signal pipeline.

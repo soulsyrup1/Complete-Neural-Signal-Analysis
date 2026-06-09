@@ -18,6 +18,11 @@
     "fractal analysis",
     "topological data analysis",
     "Riemannian geometry",
-    "quantum-inspired analysis"
+    "quantum-inspired analysis",
+    "NeuroMouse"
+  ],
+  "softwareRequirements": "Python, browser",
+  "sameAs": [
+    "https://github.com/UlaYuga/NeuroMouse"
   ]
 }

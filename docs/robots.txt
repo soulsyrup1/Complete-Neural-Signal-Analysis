@@ -1,4 +1,3 @@
 User-agent: *
 Allow: /
-
 Sitemap: https://soulsyrup1.github.io/Complete-Neural-Signal-Analysis/sitemap.xml
