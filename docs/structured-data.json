@@ -1,0 +1,23 @@
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareSourceCode",
+  "name": "Complete Neural Signal Analysis Toolbox",
+  "url": "https://soulsyrup1.github.io/Complete-Neural-Signal-Analysis/",
+  "codeRepository": "https://github.com/soulsyrup1/Complete-Neural-Signal-Analysis",
+  "license": "https://creativecommons.org/licenses/by-sa/4.0/",
+  "description": "Open-source EEG, neural signal processing, biomedical signal processing, nonlinear time-series, spectral, entropy, fractal, topology, geometry, manifold, and quantum-inspired analysis toolbox with a no-code GUI.",
+  "keywords": [
+    "EEG analysis",
+    "neural signal processing",
+    "biomedical signal processing",
+    "computational neuroscience",
+    "brain-computer interface",
+    "no-code GUI",
+    "spectral analysis",
+    "entropy analysis",
+    "fractal analysis",
+    "topological data analysis",
+    "Riemannian geometry",
+    "quantum-inspired analysis"
+  ]
+}
