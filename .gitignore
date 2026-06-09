@@ -66,6 +66,8 @@
 !/Topology/
 !/Topology/**
 
+!/docs/
+!/docs/**
 
 # =======================================================
 # Still ignore junk inside allowed directories
