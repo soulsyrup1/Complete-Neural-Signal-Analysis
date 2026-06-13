@@ -36,7 +36,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent
 PYPROJECT = PROJECT_ROOT / "pyproject.toml"
 INSTALL_MARKER = PROJECT_ROOT / ".neuro_signal_app_install.json"
 INSTALL_EXTRA = ".[all,frontend,live,dev]"
-APP_VERSION = "0.10.6"
+APP_VERSION = "0.11.15"
 
 # Modules we expect after the normal full install. These cover conversion,
 # HTML frontend, live backend, HDF5/MAT/EDF/NWB support, and optional zarr export.

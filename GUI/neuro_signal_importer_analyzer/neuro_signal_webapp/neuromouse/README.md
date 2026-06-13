@@ -4,13 +4,19 @@ NeuroMouse is a zero-build browser workbench for EEG and neural signal analysis 
 
 The dashboard stays browser-native: no Python in the browser, no framework, and no required runtime service for static replay. ZIP session import uses JSZip from CDN.
 
+The viewer is montage-agnostic: any channel count and channel names are accepted. The data interface between a Python backend and this viewer is documented in [DATA_CONTRACT.md](./DATA_CONTRACT.md).
+
+Production: https://neuromouse.up.railway.app
+
+Custom domain target: https://neuromouse.ai
+
 ## Views
 
 - Neural Workbench: file import, curated toolbox coverage, cohort comparison goal, analysis pipeline, summary metrics, and markdown report export.
 - PSD Heatmap: Welch PSD by frequency and channel, plus a selected-channel overlay.
-- Centroid Over Time: 32 channel lines with synchronized channel selection.
+- Centroid Over Time: one line per channel with synchronized channel selection.
 - Geometry Stack: six sliding spectral metrics for the selected channel.
-- Channel Grid: 10-20 layout colored by alpha relative power.
+- Channel Grid: 10-20 head map when channel names match it, otherwise a generic grid, colored by alpha relative power.
 - Playback: synchronized scrubber and speed controls for animated replay.
 - Phase Space: delay embedding and two-metric trajectories for the selected channel.
 - Advanced views: polar alpha chronomap, Kuramoto phase animation, channel network, TDA persistence, and closed-loop monitor when the backing data exists.
@@ -33,20 +39,17 @@ Click a channel row, line, or electrode to update every view.
 
 ## Run Locally
 
+The committed `data/data.json` is enough to run the dashboard — no conversion step is needed for the demo dataset.
+
 ```bash
-python3 tools/convert_data.py
-python3 -m http.server 8000
+npm start
 ```
 
-Open `http://localhost:8000/`.
+This runs `node server.mjs` (the same runtime used in production) and serves on `http://localhost:8080`. Any static file server also works, for example `python3 -m http.server 8000`.
 
 ## Live Mode
 
-Run the raw EEG backend separately, then use the dashboard's Live Source controls:
-
-```bash
-python3 run_raw_and_spectral_backend_v4.py
-```
+Live mode is optional. Run a soulsyrup1-style raw EEG backend separately that emits frames on `ws://127.0.0.1:8766`, then enable the dashboard's Live Source controls.
 
 The dashboard accepts raw sample payloads on `ws://127.0.0.1:8766`, defaults to 32 channels at 256 Hz, and uses backend metadata when available. Supported payloads include Float32 binary frames, JSON one-sample arrays, JSON sample-major chunks under `samples`/`data`/`values`, and channel-major JSON objects under `samples_by_channel`.
 

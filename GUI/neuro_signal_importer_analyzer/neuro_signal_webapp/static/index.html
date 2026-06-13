@@ -3,29 +3,77 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Neuro Signal App v0.11.0 + NeuroMouse Workbench</title>
+  <title>Neuro Signal App v0.11.15 — Minimal Dashboard</title>
   <link rel="stylesheet" href="/static/styles.css" />
 </head>
 <body>
   <header>
     <div>
-      <h1>Neuro Signal App <span>v0.11.0 + NeuroMouse Workbench</span></h1>
-      <p>Drag/drop neural files, convert, analyze in NeuroMouse, run live replay, compare groups, and view quick HTML summaries.</p>
+      <h1>Neuro Signal App <span>v0.11.15 — Minimal Dashboard</span></h1>
+      <p>Start with only the essentials: import data, compare datasets, run Higuchi FD, or run embedded attractor fractal dimension. Extra tools are tucked away as optional tabs.</p>
     </div>
     <div id="serverStatus">checking backend...</div>
   </header>
 
-  <nav>
-    <button class="tab active" data-tab="importTab">Import / Convert</button>
-    <button class="tab" data-tab="neuromouseTab">NeuroMouse</button>
-    <button class="tab" data-tab="previewTab">Quick Visualizations</button>
-    <button class="tab" data-tab="liveTab">Live Replay</button>
-    <button class="tab" data-tab="compareTab">Compare</button>
-    <button class="tab" data-tab="resultsTab">Results</button>
+  <nav class="simple-nav minimal-nav">
+    <button class="tab active" data-tab="homeTab">Home</button>
+    <button class="tab" data-tab="importTab">Import Dataset(s)</button>
+    <button class="tab" data-tab="compareTab">Compare Datasets</button>
+    <button class="tab" data-tab="higuchiTab">Higuchi FD</button>
+    <button class="tab" data-tab="embeddedFdTab">Embedded FD</button>
+    <button id="moreOptionsBtn" type="button">More tools</button>
+    <span id="optionalTabs" class="optional-tabs" hidden>
+      <button class="tab" data-tab="neuromouseTab">NeuroMouse</button>
+      <button class="tab" data-tab="advancedMethodsTab">All Advanced Methods</button>
+      <button class="tab" data-tab="previewTab">Quick Visualizations</button>
+      <button class="tab" data-tab="liveTab">Live Replay</button>
+      <button class="tab" data-tab="resultsTab">Results</button>
+    </span>
   </nav>
 
   <main>
-    <section id="importTab" class="panel active">
+    <section id="homeTab" class="panel active simple-home-panel">
+      <div class="simple-hero card minimal-hero-card">
+        <div class="new-badge">v0.11.15 minimal</div>
+        <h2>Choose one core action</h2>
+        <p>No extra controls are shown by default. Import data first, then run one of the two fractal-dimension analyses or compare datasets.</p>
+        <div class="simple-action-grid minimal-action-grid">
+          <button id="homeUploadBtn" class="simple-action primary-action" type="button">
+            <strong>Import dataset / datasets</strong>
+            <span>Upload one file, many files, a folder, or a ZIP.</span>
+          </button>
+          <button id="homeCompareBtn" class="simple-action" type="button">
+            <strong>Compare datasets</strong>
+            <span>Compare two groups of converted recordings.</span>
+          </button>
+          <button id="homeHiguchiBtn" class="simple-action" type="button">
+            <strong>Run Higuchi FD</strong>
+            <span>Notebook-style black/cyan Higuchi plots.</span>
+          </button>
+          <button id="homeEmbeddedFdBtn" class="simple-action" type="button">
+            <strong>Run embedded FD</strong>
+            <span>Box-counting FD + correlation dimension D2 plots.</span>
+          </button>
+        </div>
+      </div>
+      <div class="card simple-guidance-card">
+        <h3>More tools stay hidden until needed</h3>
+        <p>Normal NeuroMouse, quick visualizations, live replay, results, and the full backend method runner are available as optional tabs.</p>
+        <div class="button-row">
+          <button id="homeShowMoreBtn" type="button">Show more tools</button>
+          <a class="button-like" href="/api/health" target="_blank">Check running version</a>
+        </div>
+      </div>
+    </section>
+    <section id="importTab" class="panel">
+      <div class="card import-landing-card">
+        <h2>Import dataset / datasets</h2>
+        <p>Drop files, folders, or ZIP archives here. After conversion, use the Higuchi FD or Embedded FD tabs for the simplified analysis workflow.</p>
+        <div class="button-row">
+          <button id="jumpAdvancedPlotsBtn" class="primary">Go to Higuchi FD</button>
+          <button id="jumpEmbeddedFdBtn" type="button">Go to Embedded FD</button>
+        </div>
+      </div>
       <div class="grid two">
         <div class="card">
           <h2>1. Drop files or folders</h2>
@@ -147,6 +195,127 @@
     </section>
 
 
+    <section id="higuchiTab" class="panel">
+      <div id="higuchiDirectCard" class="card higuchi-direct-card">
+        <div class="new-badge">NEW BACKEND METHOD</div>
+        <h2>Higuchi Fractal Dimension — Backend Analysis + Frontend Plots</h2>
+        <p>This is the new analysis path you asked for. It runs Higuchi FD in the backend and plots the returned JSON directly in this frontend, similar to the working phase-space approach.</p>
+        <div class="grid two compact-grid">
+          <div>
+            <label>Converted recording folder
+              <input id="higuchiDirectRecordingDir" placeholder="blank = latest converted recording" />
+            </label>
+            <div class="button-row">
+              <button id="higuchiDirectUseLatestBtn" type="button">Use Latest Converted Recording</button>
+            </div>
+          </div>
+          <div class="method-param-grid">
+            <label>Speed mode
+              <select id="higuchiDirectMode">
+                <option value="fast" selected>fast</option>
+                <option value="ultrafast">ultrafast</option>
+                <option value="normal">normal</option>
+              </select>
+            </label>
+            <label>Segment start sec <input id="higuchiDirectStart" type="number" step="any" placeholder="optional" /></label>
+            <label>Segment end sec <input id="higuchiDirectEnd" type="number" step="any" placeholder="optional" /></label>
+            <label>k max override <input id="higuchiDirectKMax" type="number" step="1" placeholder="optional" /></label>
+          </div>
+        </div>
+        <div class="button-row big">
+          <button id="higuchiDirectRunBtn" class="primary" type="button">Run Higuchi Fractal Dimension</button>
+          <button id="higuchiDirectCopyJsonBtn" type="button">Copy Higuchi JSON</button>
+        </div>
+        <div id="higuchiDirectStatus" class="status big-status">Ready. Import/convert a recording, then run Higuchi FD here.</div>
+        <div id="higuchiDirectResult" class="method-result-panel higuchi-direct-result">
+          <div class="method-note">Higuchi FD plots will appear here after the backend method finishes.</div>
+          <div class="advanced-plot-pills">
+            <span>HFD by channel</span><span>Scalp layout map</span><span>Regional mean ± SEM</span><span>Left-right asymmetry</span><span>Rolling HFD stability</span><span>Fit diagnostics</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="embeddedFdTab" class="panel">
+      <div id="embeddedFdDirectCard" class="card embedded-fd-card">
+        <div class="new-badge">NEW BACKEND METHOD</div>
+        <h2>Embedded Fractal Dimension — Attractor Embeddings</h2>
+        <p>This ports your embedded-fractal-dimension research analysis into the app. It computes box-counting fractal dimension and sampled correlation dimension D2 across 2D–10D embeddings. If saved embedding files are not present, the backend generates delay embeddings from <code>signal.npy</code>.</p>
+        <div class="grid two compact-grid">
+          <div>
+            <label>Converted recording folder
+              <input id="embeddedFdRecordingDir" placeholder="blank = latest converted recording" />
+            </label>
+            <div class="button-row">
+              <button id="embeddedFdUseLatestBtn" type="button">Use Latest Converted Recording</button>
+            </div>
+          </div>
+          <div class="method-param-grid">
+            <label>Speed mode
+              <select id="embeddedFdMode">
+                <option value="ultra">ultra</option>
+                <option value="fast" selected>fast</option>
+                <option value="balanced">balanced</option>
+                <option value="full">full</option>
+              </select>
+            </label>
+            <label>Embedding dims <input id="embeddedFdDims" value="2,3,4,5,6,7,8,9,10" /></label>
+            <label>Delay tau ms <input id="embeddedFdTauMs" type="number" step="any" value="10" /></label>
+            <label>Max channels <input id="embeddedFdMaxChannels" type="number" step="1" placeholder="optional" /></label>
+          </div>
+        </div>
+        <div class="button-row big">
+          <button id="embeddedFdRunBtn" class="primary" type="button">Run Embedded Fractal Dimension</button>
+          <button id="embeddedFdCopyJsonBtn" type="button">Copy Embedded FD JSON</button>
+        </div>
+        <div id="embeddedFdStatus" class="status big-status">Ready. Import/convert a recording, then run embedded fractal dimension here.</div>
+        <div id="embeddedFdResult" class="method-result-panel embedded-fd-result">
+          <div class="method-note">Embedded FD plots will appear here after the backend method finishes.</div>
+          <div class="advanced-plot-pills">
+            <span>D2 vs embedding dimension</span><span>Box FD vs embedding dimension</span><span>Mean dimensions</span><span>D2 heatmap</span><span>Box FD heatmap</span><span>Complexity ranking</span><span>D2 vs box FD</span><span>Fit QC</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="advancedMethodsTab" class="panel">
+      <div class="card advanced-analysis-divider">
+        <h2>All Advanced Methods</h2>
+        <p class="hint">Optional method runner for every backend analysis. The two primary fractal analyses have dedicated tabs and render plots directly.</p>
+      </div>
+      <div class="grid two">
+        <div class="card">
+          <h2>Advanced Methods</h2>
+          <p>Run native NeuroMouse-style backend methods against a converted recording folder. These are optional advanced analyses layered on top of the normal continuous-signal pipeline.</p>
+          <label>Converted recording folder <input id="advancedRecordingDir" placeholder="/path/to/converted recording folder containing signal.npy" /></label>
+          <div class="button-row">
+            <button id="advancedUseLatestBtn">Use Latest Converted Recording</button>
+            <button id="advancedRefreshMethodsBtn">Refresh Methods</button>
+          </div>
+          <label>Method
+            <select id="advancedMethodSelect"></select>
+          </label>
+          <div id="advancedMethodDescription" class="hint">Loading available methods...</div>
+          <div id="advancedParams" class="method-param-grid"></div>
+          <div class="button-row big">
+            <button id="advancedRunBtn" class="primary">Run Advanced Method</button>
+            <button id="advancedCopyJsonBtn">Copy Result JSON</button>
+          </div>
+        </div>
+        <div class="card">
+          <h2>Method Output</h2>
+          <div id="advancedStatus" class="status">No advanced method has run yet.</div>
+          <div id="advancedSummary" class="method-summary"></div>
+          <div id="advancedResultPanel" class="method-result-panel">Choose a method and run it on a converted recording folder.</div>
+        </div>
+      </div>
+      <details class="card">
+        <summary>Raw advanced method result JSON</summary>
+        <pre id="advancedRawJson">{}</pre>
+      </details>
+
+    </section>
+
 
     <section id="previewTab" class="panel">
       <div class="grid two">
@@ -264,6 +433,6 @@
     </section>
   </main>
 
-  <script src="/static/app.js?v=0.11.0"></script>
+  <script src="/static/app.js?v=0.11.15-minimal-fractal"></script>
 </body>
 </html>

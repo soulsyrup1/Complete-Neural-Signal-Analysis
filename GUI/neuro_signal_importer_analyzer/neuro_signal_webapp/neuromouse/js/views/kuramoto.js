@@ -1,4 +1,4 @@
-import { getChannelIndex, getFrame, onChannelChange, onFrameChange } from "../state.js";
+import * as defaultState from "../state.js";
 import { createDisposables } from "../disposables.js";
 import {
   ACTIVE_COLOR,
@@ -12,22 +12,21 @@ import {
   resizeCanvas,
 } from "./chart-utils.js";
 
-export function initKuramotoView(root, data) {
+export function initKuramotoView(root, data, context = {}) {
+  const state = context.state ?? defaultState;
+  const document = context.document ?? globalThis.document;
+  const {
+    getChannelIndex,
+    getFrame,
+    onChannelChange,
+    onFrameChange,
+  } = state;
   const section = root?.closest("section");
-  if (!root) return () => {};
-  if (section) section.hidden = false;
-  const kuramoto0 = data?.kuramoto ?? null;
-  const validKuramoto = kuramoto0
-    && Array.isArray(kuramoto0.time)
-    && Array.isArray(kuramoto0.channel_phases)
-    && Array.isArray(kuramoto0.order_parameter_r)
-    && Array.isArray(kuramoto0.mean_phase_psi)
-    && kuramoto0.time.length > 1
-    && kuramoto0.channel_phases.length > 0;
-  if (!validKuramoto) {
-    renderUnavailable(root, "Kuramoto Animation", "This dataset did not include Kuramoto phase arrays. Re-run Convert or Analyze in NeuroMouse with v0.11.0 so the backend generates alpha-band phase synchrony from the uploaded continuous signal.");
+  if (!root || !data.kuramoto) {
+    if (section) section.hidden = true;
     return () => {};
   }
+  section.hidden = false;
 
   const disposables = createDisposables();
   const canvas = document.createElement("canvas");
@@ -114,8 +113,4 @@ function drawDotGrid(ctx, width, height) {
     }
   }
   ctx.restore();
-}
-
-function renderUnavailable(root, title, message) {
-  root.innerHTML = `<div class="view-error" role="status"><strong>${title}</strong><span>${message}</span></div>`;
 }

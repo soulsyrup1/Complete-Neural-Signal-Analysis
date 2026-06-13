@@ -1,7 +1,4 @@
 let dataCache = null;
-let loadedDatasetUrl = null;
-let loadedFromBackendDataset = false;
-let loadedFromDemoDataset = false;
 
 export function createStaticSource() {
   return {
@@ -19,158 +16,206 @@ export function createStaticSource() {
 export async function loadStaticData() {
   if (dataCache) return dataCache;
 
-  const requestedDatasetUrl = await Promise.resolve(datasetUrlFromQueryOrBackendState());
-  const forceBackend = shouldForceBackendDataset();
-  if (forceBackend && !requestedDatasetUrl) {
-    throw new Error("NeuroMouse was opened in backend-dataset mode, but no backend data.json URL was supplied. Use the generated NeuroMouse link in the launcher Results tab.");
-  }
-
-  const datasetUrl = requestedDatasetUrl ?? new URL("../../data/data.json", import.meta.url);
-  loadedFromBackendDataset = Boolean(
-    globalThis.NEURO_SIGNAL_BACKEND_DATASET?.backend ||
-    forceBackend ||
-    (requestedDatasetUrl && isBackendDatasetUrl(String(requestedDatasetUrl)))
-  );
-  loadedFromDemoDataset = !requestedDatasetUrl && !loadedFromBackendDataset;
-  dataCache = await loadDataFromUrl(datasetUrl, {
-    fromBackend: loadedFromBackendDataset,
-    fromDemo: loadedFromDemoDataset,
-  });
-  loadedDatasetUrl = String(datasetUrl);
-  return dataCache;
-}
-
-export async function loadDataFromUrl(datasetUrl, opts = {}) {
-  const response = await fetch(datasetUrl, { cache: 'no-store' });
-  if (!response.ok) {
-    throw new Error(`Failed to load data.json: HTTP ${response.status} from ${datasetUrl}`);
-  }
-
-  const data = await response.json();
-  validateData(data);
-  try {
-    data.meta = data.meta || {};
-    data.meta.loaded_dataset_url = String(datasetUrl);
-    data.meta.loaded_from_demo = Boolean(opts.fromDemo);
-    data.meta.loaded_from_backend = Boolean(opts.fromBackend);
-    const params = new URLSearchParams(window.location.search);
-    const injectedJob = globalThis.NEURO_SIGNAL_BACKEND_DATASET?.jobId;
-    if (opts.fromBackend && injectedJob) data.meta.backend_job_id = injectedJob;
-    if (opts.fromBackend && params.get("backend_job")) data.meta.backend_job_id = params.get("backend_job");
-    if (opts.fromBackend && !data.meta.backend_job_id) data.meta.backend_job_id = inferJobIdFromDatasetUrl(String(datasetUrl));
-    if (opts.fromBackend && !data.meta.source) data.meta.source = "Neuro Signal backend generated data.json";
-  } catch {}
-  return data;
-}
-
-function shouldForceBackendDataset() {
-  try {
-    const params = new URLSearchParams(window.location.search);
-    return Boolean(
-      globalThis.NEURO_SIGNAL_BACKEND_DATASET?.forceBackend ||
-      globalThis.NEURO_SIGNAL_BACKEND_DATASET?.disableDemoFallback ||
-      params.get("force_backend") === "1" ||
-      params.get("backend") === "1"
-    );
-  } catch {
-    return Boolean(globalThis.NEURO_SIGNAL_BACKEND_DATASET?.forceBackend);
-  }
-}
-
-function isBackendDatasetUrl(url) {
-  return url.includes("/api/jobs/") ||
-    url.includes("/api/neuromouse/") ||
-    url.includes("backend=1") ||
-    url.includes("/api/file");
-}
-
-function inferJobIdFromDatasetUrl(url) {
-  const m = url.match(/\/api\/jobs\/([^/]+)\/neuromouse\/data\.json/);
-  return m ? m[1] : null;
-}
-
-function datasetUrlFromQueryOrBackendState() {
-  try {
-    const params = new URLSearchParams(window.location.search);
-    // Explicit demo path remains /neuromouse/?demo=1
-    if (params.get("demo") === "1") return null;
-
-    const injected = globalThis.NEURO_SIGNAL_BACKEND_DATASET?.datasetUrl;
-    if (injected) return injected;
-
-    const dataset = params.get("dataset") || params.get("data_json");
-    if (dataset) return dataset;
-
-    // Plain /neuromouse/ should ask the backend for the newest generated
-    // dataset first. Older versions trusted a URL saved in localStorage, which
-    // could point at a deleted/restarted job and cause a startup 404.
-    const latest = awaitLatestBackendDatasetUrl();
-    if (latest) return latest;
-
-    // Only use the stored URL as a final fallback. This keeps old workflows
-    // working but prevents stale browser state from outranking fresh backend
-    // outputs.
-    const stored = window.localStorage?.getItem("NEURO_SIGNAL_LAST_BACKEND_DATASET_URL");
-    if (stored && isBackendDatasetUrl(stored)) return stored;
-    return null;
-  } catch {
-    return null;
-  }
-}
-
-async function latestBackendDatasetUrl() {
-  try {
-    const response = await fetch("/api/neuromouse/latest?t=" + Date.now(), { cache: "no-store" });
-    if (!response.ok) return null;
-    const info = await response.json();
-    const datasetUrl = info?.dataset_url;
-    if (datasetUrl && isBackendDatasetUrl(datasetUrl)) {
-      try {
-        window.localStorage?.setItem("NEURO_SIGNAL_LAST_BACKEND_DATASET_URL", datasetUrl);
-        if (info.neuromouse_url) window.localStorage?.setItem("NEURO_SIGNAL_LAST_NEUROMOUSE_URL", info.neuromouse_url);
-      } catch {}
-      return datasetUrl;
+  const failures = [];
+  for (const candidate of resolveStaticDataCandidates()) {
+    try {
+      const response = await fetch(candidate.url, { cache: "no-store" });
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      const data = await response.json();
+      validateData(data);
+      dataCache = data;
+      if (candidate.persist) {
+        rememberBackendDataset(candidate.url);
+      }
+      return dataCache;
+    } catch (error) {
+      failures.push(`${candidate.label}: ${error.message}`);
+      if (candidate.clearOnFail) clearRememberedBackendDataset();
     }
-  } catch {}
-  return null;
+  }
+
+  throw new Error(`Failed to load a NeuroMouse data.json. Tried: ${failures.join("; ")}`);
 }
 
-function awaitLatestBackendDatasetUrl() {
-  // datasetUrlFromQueryOrBackendState is used inside async loadStaticData(), so
-  // return a Promise and let loadStaticData await it via Promise.resolve below.
-  return latestBackendDatasetUrl();
+
+function resolveStaticDataCandidates() {
+  // backend-dataset mode: bind importer/analyzer generated data into original NeuroMouse.
+  // v0.11.9: the original NeuroMouse advanced panels only become visible after
+  // the dataset loads and contains advanced-analysis objects. Previous builds
+  // could get stuck on a stale localStorage URL from an older job; when that
+  // fetch failed, the app never mounted and the panels stayed hidden. This
+  // function now tries backend-generated data first, falls back safely, and
+  // clears stale remembered URLs.
+  const candidates = [];
+  const add = (url, label, options = {}) => {
+    if (!url) return;
+    const text = String(url);
+    if (candidates.some((item) => String(item.url) === text)) return;
+    candidates.push({ url, label, ...options });
+  };
+
+  const params = new URLSearchParams(globalThis.window?.location?.search ?? "");
+  const injectedUrl = globalThis.window?.NEURO_SIGNAL_BACKEND_DATASET?.datasetUrl;
+  add(injectedUrl, "backend-injected dataset", { persist: true, clearOnFail: false });
+  add(params.get("dataset") || params.get("data") || params.get("data_json"), "query dataset", { persist: true, clearOnFail: false });
+
+  try {
+    const remembered = globalThis.window?.localStorage?.getItem("NEURO_SIGNAL_LAST_BACKEND_DATASET_URL");
+    add(remembered, "remembered backend dataset", { persist: false, clearOnFail: true });
+  } catch (_error) {}
+
+  // This endpoint scans the app workspace for the newest generated NeuroMouse
+  // data.json. It is what users expect after they click Convert or Analyze in
+  // NeuroMouse. If none exists, it will 404 and we continue to the bundled demo.
+  add("/api/neuromouse/latest/data.json", "latest backend dataset", { persist: true, clearOnFail: false });
+
+  // Plain /neuromouse/?demo=1 and /neuromouse/ still have an advanced-analysis demo dataset so users can
+  // verify that Polar Alpha, Kuramoto, Channel Network, and TDA render even
+  // before importing their own file.
+  add(new URL("../../data/data.json", import.meta.url), "bundled NeuroMouse demo", { persist: false, clearOnFail: false });
+  return candidates;
 }
 
-export function validateData(data) {
+function rememberBackendDataset(url) {
+  if (!url) return;
+  try {
+    const text = String(url);
+    if (text.startsWith("/api/") || text.includes("/api/")) {
+      globalThis.window?.localStorage?.setItem("NEURO_SIGNAL_LAST_BACKEND_DATASET_URL", text);
+    }
+  } catch (_error) {}
+}
+
+function clearRememberedBackendDataset() {
+  try {
+    globalThis.window?.localStorage?.removeItem("NEURO_SIGNAL_LAST_BACKEND_DATASET_URL");
+    globalThis.window?.localStorage?.removeItem("NEURO_SIGNAL_LAST_BACKEND_JOB_ID");
+    globalThis.window?.localStorage?.removeItem("NEURO_SIGNAL_LAST_NEUROMOUSE_URL");
+  } catch (_error) {}
+}
+
+export function validateData(data, { maxChannels = 4096 } = {}) {
+  const isPositiveInteger = (value) => Number.isInteger(value) && value > 0;
+  const requireFiniteNumbers = (values, message) => {
+    for (const value of values) {
+      if (!Number.isFinite(value)) {
+        throw new Error(message);
+      }
+    }
+  };
+  const requireMatrixRows = (rows, expectedWidth, label, widthLabel) => {
+    rows.forEach((row, index) => {
+      if (!Array.isArray(row)) {
+        throw new Error(`${label} row ${index} must be an array`);
+      }
+      if (row.length !== expectedWidth) {
+        throw new Error(`${label} row ${index} length must equal ${widthLabel}`);
+      }
+      requireFiniteNumbers(row, `${label} row ${index} must contain only finite numbers`);
+    });
+  };
+
+  if (!isPositiveInteger(maxChannels)) {
+    throw new Error("maxChannels must be a positive integer");
+  }
+
   const channels = data?.meta?.channels;
-  if (!Array.isArray(channels) || channels.length < 1) {
-    throw new Error("data.json must contain one or more meta.channels entries");
+  if (!Array.isArray(channels) || channels.length === 0) {
+    throw new Error("data.json must contain a non-empty meta.channels array");
   }
-  const nChannels = Number(data?.meta?.n_channels ?? channels.length);
-  if (!Number.isFinite(nChannels) || nChannels !== channels.length) {
-    throw new Error("data.json meta.n_channels must match meta.channels.length");
+  const channelCount = channels.length;
+  if (channelCount > maxChannels) {
+    throw new Error(`meta.channels length must be at most ${maxChannels}`);
   }
+
+  if (Object.hasOwn(data.meta, "n_channels")) {
+    const declaredChannelCount = data.meta.n_channels;
+    if (!isPositiveInteger(declaredChannelCount)) {
+      throw new Error("meta.n_channels must be a positive integer");
+    }
+    if (declaredChannelCount !== channelCount) {
+      throw new Error("meta.n_channels must equal meta.channels length");
+    }
+  }
+
   if (!Array.isArray(data?.welch_psd?.frequencies) || !Array.isArray(data?.welch_psd?.psd)) {
     throw new Error("data.json is missing welch_psd arrays");
   }
-  if (data.welch_psd.psd.length !== channels.length) {
-    throw new Error("data.json welch_psd.psd must be channel-major and match meta.channels.length");
+  if (data.welch_psd.frequencies.length === 0) {
+    throw new Error("welch_psd.frequencies must be a non-empty array");
   }
+  requireFiniteNumbers(
+    data.welch_psd.frequencies,
+    "welch_psd.frequencies must contain only finite numbers",
+  );
+  if (data.welch_psd.psd.length !== channelCount) {
+    throw new Error(`welch_psd.psd has ${data.welch_psd.psd.length} channel rows but meta.channels lists ${channelCount}`);
+  }
+  requireMatrixRows(
+    data.welch_psd.psd,
+    data.welch_psd.frequencies.length,
+    "welch_psd.psd",
+    "welch_psd.frequencies length",
+  );
+
   if (!Array.isArray(data?.centroid?.time_relative) || !Array.isArray(data?.centroid?.values)) {
     throw new Error("data.json is missing centroid arrays");
   }
-  if (data.centroid.values.length !== channels.length) {
-    throw new Error("data.json centroid.values must be channel-major and match meta.channels.length");
+  if (data.centroid.time_relative.length === 0) {
+    throw new Error("centroid.time_relative must be a non-empty array");
   }
+  if (data.centroid.values.length !== channelCount) {
+    throw new Error(`centroid.values has ${data.centroid.values.length} channel rows but meta.channels lists ${channelCount}`);
+  }
+  requireMatrixRows(
+    data.centroid.values,
+    data.centroid.time_relative.length,
+    "centroid.values",
+    "centroid.time_relative length",
+  );
+
   if (!Array.isArray(data?.geometry?.time)) {
     throw new Error("data.json is missing geometry.time");
   }
-  if (!Array.isArray(data?.channel_summary) || data.channel_summary.length !== channels.length) {
-    throw new Error("data.json channel_summary must match meta.channels.length");
+  if (data.geometry.time.length === 0) {
+    throw new Error("geometry.time must be a non-empty array");
+  }
+  requireFiniteNumbers(
+    data.geometry.time,
+    "geometry.time must contain only finite numbers",
+  );
+
+  if (Object.hasOwn(data, "mea")) {
+    if (!data.mea || typeof data.mea !== "object") {
+      throw new Error("mea must be an object when present");
+    }
+    if (typeof data.mea.sampling_rate_hz !== "number" || !Number.isFinite(data.mea.sampling_rate_hz) || data.mea.sampling_rate_hz <= 0) {
+      throw new Error("mea.sampling_rate_hz must be a positive number");
+    }
+    if (!Array.isArray(data.mea.traces) || data.mea.traces.length === 0) {
+      throw new Error("mea.traces must be a non-empty array when present");
+    }
+    if (!Array.isArray(data.mea.traces[0]) || data.mea.traces[0].length === 0) {
+      throw new Error("mea.traces[0] must be a non-empty array");
+    }
+    const meaHasSamples = Object.hasOwn(data.mea, "n_samples");
+    let expectedTraceWidth = data.mea.traces[0]?.length;
+    if (meaHasSamples) {
+      if (!isPositiveInteger(data.mea.n_samples)) {
+        throw new Error("mea.n_samples must be a positive integer");
+      }
+      expectedTraceWidth = data.mea.n_samples;
+    }
+    requireMatrixRows(
+      data.mea.traces,
+      expectedTraceWidth,
+      "mea.traces",
+      meaHasSamples ? "mea.n_samples" : "trace length",
+    );
+    if (data.mea.traces.length !== channelCount) {
+      throw new Error(`mea.traces has ${data.mea.traces.length} channel rows but meta.channels lists ${channelCount}`);
+    }
   }
 }
-
-
-export function getLoadedDatasetUrl() { return loadedDatasetUrl; }
-export function isLoadedFromBackendDataset() { return loadedFromBackendDataset; }
-export function isLoadedFromDemoDataset() { return loadedFromDemoDataset; }

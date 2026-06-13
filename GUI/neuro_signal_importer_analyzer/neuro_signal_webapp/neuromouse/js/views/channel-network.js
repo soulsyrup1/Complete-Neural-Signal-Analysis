@@ -1,26 +1,50 @@
-import { getChannel, getFrame, onChannelChange, onFrameChange, setChannel } from "../state.js";
+import * as defaultState from "../state.js";
 import { createDisposables } from "../disposables.js";
 import { ACTIVE_COLOR, CHART_BACKGROUND, MUTED_COLOR, clamp, formatNumber } from "./chart-utils.js";
 import { EEG_10_20 } from "./channel-grid.js";
 
-export function initChannelNetwork(root, data, tooltip) {
+export function initChannelNetwork(root, data, tooltip, context = {}) {
+  const state = context.state ?? defaultState;
+  const document = context.document ?? globalThis.document;
+  const {
+    getChannel,
+    getFrame,
+    onChannelChange,
+    onFrameChange,
+    setChannel,
+  } = state;
   const section = root?.closest("section");
-  if (!root) return () => {};
-  if (section) section.hidden = false;
-  const network0 = data?.channel_network ?? null;
-  const validNetwork = network0
-    && Array.isArray(network0.channels)
-    && network0.channels.length > 0
-    && Array.isArray(network0.composite_correlation);
-  if (!validNetwork) {
-    renderUnavailable(root, "Channel Network", "This dataset did not include channel-network arrays. Re-run Convert or Analyze in NeuroMouse with v0.11.0 so the backend generates variable-electrode correlation/PLV network data from the uploaded continuous signal.");
+  if (!root || !data.channel_network) {
+    if (section) section.hidden = true;
     return () => {};
   }
+  section.hidden = false;
 
   const disposables = createDisposables();
   let threshold = Number(data.channel_network.threshold_strong ?? 0.7);
   let metric = "composite";
   let showWeak = false;
+
+  function labelText(text) {
+    const span = document.createElement("span");
+    span.textContent = text;
+    return span;
+  }
+
+  function option(value, text) {
+    const node = document.createElement("option");
+    node.value = value;
+    node.textContent = text;
+    return node;
+  }
+
+  function element(name, attrs = {}, text = "") {
+    const node = document.createElementNS("http://www.w3.org/2000/svg", name);
+    Object.entries(attrs).forEach(([key, value]) => node.setAttribute(key, value));
+    if (Array.isArray(text)) node.append(...text);
+    else if (text) node.textContent = text;
+    return node;
+  }
 
   const controls = document.createElement("div");
   controls.className = "network-controls";
@@ -114,8 +138,8 @@ export function initChannelNetwork(root, data, tooltip) {
         const strength = Math.abs(rawValue);
         const strong = strength >= threshold;
         if (!strong && (!showWeak || strength < 0.3)) continue;
-        const a = coord(channels[i], i, channels.length);
-        const b = coord(channels[j], j, channels.length);
+        const a = coord(channels[i]);
+        const b = coord(channels[j]);
         const selectedEdge = channels[i] === selected || channels[j] === selected;
         const opacity = strong ? (selectedEdge ? 0.88 : 0.52) : 0.12;
         edgeLayer.append(element("line", {
@@ -131,7 +155,7 @@ export function initChannelNetwork(root, data, tooltip) {
     }
 
     channels.forEach((channel, index) => {
-      const point = coord(channel, index, channels.length);
+      const point = coord(channel);
       const degree = degrees[index];
       const active = channel === selected;
       const group = element("g", {
@@ -201,19 +225,12 @@ export function initChannelNetwork(root, data, tooltip) {
     return metric === "composite" ? "composite correlation" : metricLabelText(metric);
   }
 
-  function coord(channel, index = 0, total = 1) {
-    const known = EEG_10_20[channel];
-    if (known) {
-      const [nx, ny] = known;
-      return { x: 56 + nx * 608, y: 36 + ny * 394 };
-    }
-    // Generic variable-electrode fallback for MEA/organoid/custom labels and
-    // datasets with more than the 10-20 EEG channel set. This prevents unknown
-    // channels from collapsing into the center of the network.
-    const angle = (index / Math.max(1, total)) * Math.PI * 2 - Math.PI / 2;
-    const rx = 278;
-    const ry = 194;
-    return { x: 360 + Math.cos(angle) * rx, y: 234 + Math.sin(angle) * ry };
+  function coord(channel) {
+    const [nx, ny] = EEG_10_20[channel] ?? [0.5, 0.5];
+    return {
+      x: 56 + nx * 608,
+      y: 36 + ny * 394,
+    };
   }
 
   function legend(maxDegree) {
@@ -276,8 +293,4 @@ function element(name, attrs = {}, text = "") {
   if (Array.isArray(text)) node.append(...text);
   else if (text) node.textContent = text;
   return node;
-}
-
-function renderUnavailable(root, title, message) {
-  root.innerHTML = `<div class="view-error" role="status"><strong>${title}</strong><span>${message}</span></div>`;
 }

@@ -1,0 +1,7 @@
+{
+  "python_executable": "/home/a/miniconda3/bin/python3",
+  "project_root": "/home/a/projects/Complete-Neural-Signal-Analysis/GUI/neuro_signal_importer_analyzer",
+  "pyproject_sha256": "5eb4efa032719fca79b4d78df74c2038d301a25e8072932d06018374de72d3e0",
+  "install_extra": ".[all,frontend,live,dev]",
+  "installed_at_unix": 1781326182.9632845
+}

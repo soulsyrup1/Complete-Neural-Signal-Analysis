@@ -17,7 +17,7 @@ header { display: flex; justify-content: space-between; gap: 20px; align-items: 
 h1 { margin: 0; color: var(--cyan); font-size: 21px; }
 h1 span { font-size: 14px; color: var(--muted); }
 header p { margin: 5px 0 0; color: var(--muted); }
-nav { display: flex; gap: 8px; padding: 10px 16px; border-bottom: 1px solid #064747; background: #030c0c; position: sticky; top: 0; z-index: 5; }
+nav { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px 16px; border-bottom: 1px solid #064747; background: #030c0c; position: sticky; top: 0; z-index: 5; overflow-x: auto; }
 button, .button-like { border: 1px solid var(--border); color: var(--fg); background: #000; padding: 9px 12px; min-height: 36px; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; font: inherit; }
 button:hover, .button-like:hover { background: #092727; }
 button.primary { border-color: var(--green); color: var(--green); }
@@ -84,3 +84,200 @@ code { color: var(--yellow); }
   white-space: pre-wrap;
   max-height: 520px;
 }
+
+/* v0.11.1 native Advanced Methods runner */
+.method-param-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 12px; margin-top: 12px; }
+.method-param-grid label { margin: 0; }
+.method-param-grid input, .method-param-grid select { margin-bottom: 0; }
+.method-result-panel { background: #010505; border: 1px solid #063333; border-radius: 10px; padding: 12px; min-height: 220px; color: var(--muted); overflow: auto; }
+.method-summary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 12px 0; }
+.method-summary .metric-tile { border: 1px solid #063333; border-radius: 8px; padding: 8px; background: #020a0a; }
+.method-summary .metric-tile span { display: block; color: var(--muted); font-size: 12px; }
+.method-summary .metric-tile strong { color: var(--green); }
+.method-result-panel table { width: 100%; border-collapse: collapse; }
+.method-result-panel th, .method-result-panel td { border-bottom: 1px solid #063333; padding: 6px; text-align: left; vertical-align: top; }
+.method-result-panel th { color: var(--cyan2); position: sticky; top: 0; background: #010505; }
+.method-result-panel .method-note { margin-bottom: 10px; color: var(--cyan2); }
+.method-result-panel .matrix-table td { text-align: right; font-size: 12px; }
+@media (max-width: 900px) { .method-param-grid, .method-summary { grid-template-columns: 1fr; } }
+
+
+/* v0.11.2 NeuroMouse advanced plot sections in the launcher */
+.advanced-plot-card { min-height: 520px; }
+.advanced-plot-canvas { width: 100%; background: #010505; border: 1px solid #063333; border-radius: 10px; display: block; margin: 12px 0; }
+.plot-readout { color: var(--muted); background: #010505; border: 1px solid #063333; border-radius: 8px; padding: 10px; min-height: 44px; line-height: 1.45; }
+.plot-controls { display: grid; grid-template-columns: 1fr 1fr auto; gap: 12px; align-items: end; margin: 8px 0 4px; }
+.plot-controls label { margin: 0; }
+.plot-controls input, .plot-controls select { margin-bottom: 0; }
+@media (max-width: 900px) { .plot-controls { grid-template-columns: 1fr; } }
+
+/* v0.11.3: make NeuroMouse advanced plots impossible to miss */
+button.tab.plots-tab { border-color: var(--green); color: var(--green); box-shadow: 0 0 0 1px rgba(0, 255, 153, 0.22) inset; }
+.advanced-plot-landing-card { border-color: var(--green); background: linear-gradient(180deg, rgba(0, 255, 153, 0.08), var(--panel)); }
+.advanced-plot-pills { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 12px; }
+.advanced-plot-pills span { border: 1px solid var(--green); color: var(--green); background: #00110a; border-radius: 999px; padding: 7px 10px; font-weight: 700; }
+
+
+/* v0.11.6: Advanced Analysis plot sections are never hidden by tab state. */
+#advancedMethodsTab.advanced-force-visible {
+  display: block !important;
+  scroll-margin-top: 96px;
+  border: 1px solid rgba(0, 255, 153, 0.48);
+  background: linear-gradient(180deg, rgba(0, 255, 153, 0.04), transparent 140px);
+}
+#advancedMethodsTab .visibility-note {
+  color: var(--green);
+  border: 1px solid rgba(0, 255, 153, 0.45);
+  background: rgba(0, 255, 153, 0.08);
+  border-radius: 8px;
+  padding: 10px;
+}
+#advancedMethodsTab .advanced-plot-card {
+  display: block !important;
+  visibility: visible !important;
+}
+
+/* v0.11.6: make requested Advanced Analysis sections visible before any tab or JS runs. */
+.always-advanced-block {
+  display: block !important;
+  padding: 16px;
+  border-bottom: 1px solid rgba(0, 255, 153, 0.45);
+  background: linear-gradient(180deg, rgba(0, 255, 153, 0.10), rgba(0, 0, 0, 0.02));
+}
+.always-advanced-card {
+  border-color: var(--green) !important;
+  box-shadow: 0 0 0 1px rgba(0, 255, 153, 0.18) inset, 0 0 24px rgba(0, 255, 153, 0.08);
+}
+.big-pills span { font-size: 15px; padding: 10px 13px; }
+.grid.four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.advanced-overview-grid .mini-advanced-card {
+  min-height: 132px;
+  border-color: rgba(0, 255, 153, 0.45);
+}
+.advanced-overview-grid .mini-advanced-card h2 { color: var(--green); }
+@media (max-width: 1100px) { .grid.four { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 700px) { .grid.four { grid-template-columns: 1fr; } }
+
+
+.neuromouse-original-frame {
+  width: 100%;
+  min-height: 860px;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  border-radius: 18px;
+  background: #020617;
+}
+.neuromouse-original-plot-card {
+  border: 2px solid rgba(56, 189, 248, 0.55);
+}
+
+/* v0.11.13: make the new Higuchi backend analysis visibly different from prior builds. */
+.higuchi-hero-block {
+  display: block !important;
+  padding: 18px;
+  border-bottom: 2px solid rgba(0, 255, 153, 0.55);
+  background:
+    radial-gradient(circle at 12% 0%, rgba(0, 255, 153, 0.20), transparent 34rem),
+    linear-gradient(180deg, rgba(0, 229, 229, 0.08), rgba(0,0,0,0.02));
+}
+.higuchi-hero-card,
+.higuchi-direct-card {
+  border: 2px solid rgba(0, 255, 153, 0.72) !important;
+  box-shadow: 0 0 0 1px rgba(0,255,153,0.18) inset, 0 0 28px rgba(0,255,153,0.10);
+  background: linear-gradient(180deg, rgba(0,255,153,0.10), rgba(3, 8, 10, 0.98));
+}
+.higuchi-direct-card { scroll-margin-top: 90px; }
+.new-badge {
+  display: inline-block;
+  margin-bottom: 10px;
+  padding: 7px 11px;
+  border-radius: 999px;
+  border: 1px solid var(--green);
+  background: #00170d;
+  color: var(--green);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  font-size: 12px;
+}
+.compact-grid { align-items: start; }
+.higuchi-direct-result { min-height: 280px; }
+.removed-neuromouse-details { opacity: 0.82; }
+.removed-neuromouse-details summary { color: var(--muted); cursor: pointer; }
+
+/* v0.11.15 simplified default dashboard */
+.simple-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  align-items: center;
+}
+.optional-tabs {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+.simple-home-panel.active { display: block; }
+.simple-hero {
+  border: 1px solid rgba(0, 255, 255, 0.28);
+  background: radial-gradient(circle at top left, rgba(0, 255, 255, 0.12), rgba(4, 7, 12, 0.94) 45%);
+}
+.simple-action-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+.simple-action {
+  text-align: left;
+  padding: 1.15rem;
+  min-height: 120px;
+  border-radius: 18px;
+  border: 1px solid rgba(0, 255, 255, 0.22);
+  background: rgba(0, 18, 24, 0.72);
+  color: var(--text, #e8ffff);
+  cursor: pointer;
+  transition: transform 120ms ease, border-color 120ms ease, background 120ms ease;
+}
+.simple-action:hover {
+  transform: translateY(-2px);
+  border-color: rgba(0, 255, 255, 0.7);
+  background: rgba(0, 42, 52, 0.86);
+}
+.simple-action strong {
+  display: block;
+  font-size: 1.12rem;
+  color: #e8ffff;
+  margin-bottom: 0.45rem;
+}
+.simple-action span {
+  display: block;
+  color: #9adede;
+  font-size: 0.94rem;
+  line-height: 1.35;
+}
+.primary-action {
+  box-shadow: 0 0 0 1px rgba(0, 255, 255, 0.35), 0 18px 45px rgba(0, 255, 255, 0.10);
+}
+.simple-guidance-card {
+  margin-top: 1rem;
+}
+.embedded-fd-card {
+  border: 1px solid rgba(0, 255, 153, 0.35);
+  background: linear-gradient(180deg, rgba(0, 255, 153, 0.08), rgba(4, 7, 12, 0.92));
+}
+.embedded-fd-result { min-height: 260px; }
+.embedded-plot-grid .advanced-plot-card canvas { width: 100%; height: auto; }
+@media (max-width: 760px) {
+  .simple-action-grid { grid-template-columns: 1fr; }
+}
+
+
+/* v0.11.15 minimal default dashboard */
+.minimal-nav { border-bottom: 1px solid rgba(0, 255, 255, 0.22); }
+.minimal-action-grid { grid-template-columns: repeat(4, minmax(180px, 1fr)); }
+.minimal-hero-card { border-color: rgba(0, 255, 255, 0.34); }
+.import-landing-card { border-color: rgba(0, 255, 153, 0.35); background: linear-gradient(180deg, rgba(0,255,153,0.07), var(--panel)); }
+#higuchiTab .higuchi-direct-card,
+#embeddedFdTab .embedded-fd-card { border-color: rgba(0,255,153,0.72); }
+#advancedMethodsTab .advanced-analysis-divider { border-color: rgba(0,255,255,0.30); }
+@media (max-width: 1100px) { .minimal-action-grid { grid-template-columns: repeat(2, minmax(180px, 1fr)); } }
+@media (max-width: 650px) { .minimal-action-grid { grid-template-columns: 1fr; } }

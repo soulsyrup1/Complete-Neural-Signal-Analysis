@@ -1,24 +1,6 @@
-import {
-  getChannel,
-  getChannelFilter,
-  getFrame,
-  getIsPlaying,
-  getLiveState,
-  getVisibleChannels,
-  onChannelChange,
-  onDisplayChange,
-  onFrameChange,
-  onLiveChange,
-  setChannel,
-} from "../state.js";
+import * as defaultState from "../state.js";
 import { createDisposables } from "../disposables.js";
-import {
-  getBaselineSession,
-  getComparisonSessions,
-  getRenderSessions,
-  getViewMode,
-  onSessionsChange,
-} from "../sessions.js";
+import * as defaultSessions from "../sessions.js";
 import { ACTIVE_COLOR, CHART_BACKGROUND, MUTED_COLOR, colorScale, deltaColorScale, extent, formatNumber } from "./chart-utils.js";
 
 export const EEG_10_20 = {
@@ -38,13 +20,82 @@ const COLOR_MODES = [
   { key: "variability.alpha_range", label: "alpha range", shortLabel: "Alpha range" },
 ];
 
-export function initChannelGrid(data, tooltip) {
+// Build the electrode layout for whatever montage the dataset carries.
+// When most channels match the 10-20 system we keep the head map; otherwise
+// we fall back to a generic square grid so arbitrary montages (MEA, custom
+// electrode counts/names) still render instead of breaking the view.
+export function buildElectrodeLayout(channels) {
+  const list = Array.isArray(channels) ? channels : [];
+  const known = list.filter((channel) => channel in EEG_10_20);
+  if (list.length && known.length >= Math.ceil(list.length * 0.6)) {
+    return {
+      mode: "head",
+      radius: 14,
+      fontSize: null,
+      nodes: known.map((channel) => ({
+        channel,
+        nx: EEG_10_20[channel][0],
+        ny: EEG_10_20[channel][1],
+      })),
+    };
+  }
+
+  const cols = Math.max(1, Math.ceil(Math.sqrt(list.length)));
+  const rows = Math.max(1, Math.ceil(list.length / cols));
+  return {
+    mode: "grid",
+    radius: Math.max(5, Math.min(14, Math.round(170 / cols))),
+    fontSize: cols > 8 ? Math.max(6, Math.round(72 / cols)) : null,
+    nodes: list.map((channel, index) => {
+      const col = index % cols;
+      const row = Math.floor(index / cols);
+      return {
+        channel,
+        nx: cols === 1 ? 0.5 : 0.08 + (col / (cols - 1)) * 0.84,
+        ny: rows === 1 ? 0.5 : 0.08 + (row / (rows - 1)) * 0.84,
+      };
+    }),
+  };
+}
+
+export function initChannelGrid(data, tooltip, context = {}) {
+  const state = context.state ?? defaultState;
+  const sessionStore = context.sessions ?? defaultSessions;
+  const document = context.document ?? globalThis.document;
+  const {
+    getChannel,
+    getChannelFilter,
+    getFrame,
+    getIsPlaying,
+    getLiveState,
+    getVisibleChannels,
+    onChannelChange,
+    onDisplayChange,
+    onFrameChange,
+    onLiveChange,
+    setChannel,
+  } = state;
+  const {
+    getBaselineSession,
+    getComparisonSessions,
+    getRenderSessions,
+    getViewMode,
+    onSessionsChange,
+  } = sessionStore;
   const root = document.querySelector("#channel-grid");
   const caption = document.querySelector("#grid-caption");
   const disposables = createDisposables();
   const modeBar = document.createElement("div");
   const mapRoot = document.createElement("div");
   let colorMode = "alpha_relative_power";
+
+  function element(name, attrs = {}, text = "") {
+    const node = document.createElementNS("http://www.w3.org/2000/svg", name);
+    Object.entries(attrs).forEach(([key, value]) => node.setAttribute(key, value));
+    if (Array.isArray(text)) node.append(...text);
+    else if (text) node.textContent = text;
+    return node;
+  }
 
   modeBar.className = "grid-mode-bar";
   mapRoot.className = "channel-grid-map";
@@ -99,9 +150,8 @@ export function initChannelGrid(data, tooltip) {
       ? useLive ? maxLivePower : (useFrame ? maxFramePower : maxPower)
       : metricMax;
     const time = frameTimes[Math.min(frame, frameTimes.length - 1)] ?? 0;
-    const channelList = sourceData.meta.channels;
-    const knownCount = channelList.filter((channel) => EEG_10_20[channel]).length;
-    const useGenericLayout = knownCount < Math.max(4, channelList.length * 0.6);
+    const layout = buildElectrodeLayout(sourceData.meta.channels);
+    const layoutLabel = layout.mode === "head" ? "10-20 layout" : `${layout.nodes.length}-ch grid`;
 
     if (caption) {
       caption.textContent = isDelta
@@ -110,52 +160,52 @@ export function initChannelGrid(data, tooltip) {
         ? `live ${activeMode.label} @ t=${formatNumber(liveFrame.time, 2)}s`
         : useFrame && colorMode === "alpha_relative_power"
         ? `${activeMode.label} @ t=${formatNumber(time, 2)}s`
-        : `${useGenericLayout ? "generic electrode grid" : "10-20 layout"} | color: ${activeMode.label}`;
+        : `${layoutLabel} | color: ${activeMode.label}`;
     }
 
     mapRoot.innerHTML = "";
     const svg = element("svg", {
       viewBox: "0 0 420 492",
       role: "group",
-      "aria-label": "10-20 EEG channel map",
+      "aria-label": layout.mode === "head" ? "10-20 EEG channel map" : "Channel grid map",
       overflow: "hidden",
       style: `background:${CHART_BACKGROUND}`,
     });
 
-    svg.append(
-      element("ellipse", {
-        cx: 210,
-        cy: 205,
-        rx: 165,
-        ry: 185,
-        fill: "none",
-        stroke: "rgba(255,255,255,0.12)",
-        "stroke-width": 1,
-      }),
-      element("path", {
-        d: "M196 25 L210 6 L224 25",
-        fill: "none",
-        stroke: "rgba(255,255,255,0.12)",
-        "stroke-width": 1,
-        "stroke-linejoin": "round",
-      }),
-      element("path", {
-        d: "M46 185 C12 204 12 252 46 272",
-        fill: "none",
-        stroke: "rgba(255,255,255,0.12)",
-        "stroke-width": 1,
-      }),
-      element("path", {
-        d: "M374 185 C408 204 408 252 374 272",
-        fill: "none",
-        stroke: "rgba(255,255,255,0.12)",
-        "stroke-width": 1,
-      }),
-    );
+    if (layout.mode === "head") {
+      svg.append(
+        element("ellipse", {
+          cx: 210,
+          cy: 205,
+          rx: 165,
+          ry: 185,
+          fill: "none",
+          stroke: "rgba(255,255,255,0.12)",
+          "stroke-width": 1,
+        }),
+        element("path", {
+          d: "M196 25 L210 6 L224 25",
+          fill: "none",
+          stroke: "rgba(255,255,255,0.12)",
+          "stroke-width": 1,
+          "stroke-linejoin": "round",
+        }),
+        element("path", {
+          d: "M46 185 C12 204 12 252 46 272",
+          fill: "none",
+          stroke: "rgba(255,255,255,0.12)",
+          "stroke-width": 1,
+        }),
+        element("path", {
+          d: "M374 185 C408 204 408 252 374 272",
+          fill: "none",
+          stroke: "rgba(255,255,255,0.12)",
+          "stroke-width": 1,
+        }),
+      );
+    }
 
-    const renderChannels = useGenericLayout ? channelList : Object.keys(EEG_10_20);
-    renderChannels.forEach((channel, renderIndex) => {
-      const [nx, ny] = useGenericLayout ? genericPosition(renderIndex, renderChannels.length) : EEG_10_20[channel];
+    for (const { channel, nx, ny } of layout.nodes) {
       const item = byChannel.get(channel);
       const channelIndex = channelIndexByName.get(channel);
       const power = metricValue({
@@ -183,14 +233,14 @@ export function initChannelGrid(data, tooltip) {
         element("circle", {
           cx: x,
           cy: y,
-          r: 14,
+          r: layout.radius,
           fill: isDelta ? deltaColorScale(power, rangeMin, rangeMax) : colorScale(power, rangeMin, rangeMax),
           stroke: active ? ACTIVE_COLOR : "rgba(255,255,255,0.16)",
           "stroke-width": active ? 2 : 0.5,
           opacity: isVisible ? 1 : 0.22,
           style: colorMode === "alpha_relative_power" && item?.has_clear_alpha_peak && isVisible ? "filter:drop-shadow(0 0 4px rgba(0,212,160,0.6))" : "",
         }),
-        element("text", { x, y: y + 0.5 }, channel),
+        element("text", layout.fontSize ? { x, y: y + 0.5, "font-size": layout.fontSize } : { x, y: y + 0.5 }, channel),
       );
       group.addEventListener("click", () => setChannel(channel));
       group.addEventListener("keydown", (event) => {
@@ -208,7 +258,7 @@ export function initChannelGrid(data, tooltip) {
       });
       group.addEventListener("mouseleave", tooltip.hide);
       svg.append(group);
-    });
+    }
 
     svg.append(...colorbar(rangeMin, rangeMax, isDelta, activeMode.label, colorMode === "alpha_relative_power"));
     mapRoot.append(svg);
@@ -298,16 +348,6 @@ export function initChannelGrid(data, tooltip) {
   }
 
   return disposables.dispose;
-}
-
-function genericPosition(index, total) {
-  const columns = Math.ceil(Math.sqrt(total));
-  const rows = Math.ceil(total / columns);
-  const col = index % columns;
-  const row = Math.floor(index / columns);
-  const nx = columns <= 1 ? 0.5 : 0.12 + 0.76 * (col / Math.max(1, columns - 1));
-  const ny = rows <= 1 ? 0.5 : 0.08 + 0.84 * (row / Math.max(1, rows - 1));
-  return [nx, ny];
 }
 
 function colorModesFor(sourceData, isDelta) {

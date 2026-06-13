@@ -10,10 +10,28 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="./style.css?v=0.11.0">
+    <link href="https://fonts.googleapis.com/css2?family=Archivo+Expanded:wght@600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./style.css?v=reskin-signal-20260611">
   </head>
   <body>
     <a class="skip-link" href="#dashboard">Skip to dashboard</a>
+    <section class="nm-hero" style="--hero-src:url('assets/hero-portrait.jpg')">
+      <div class="nm-hero-vis" aria-hidden="true">
+        <img class="nm-hero-img" src="assets/hero-portrait.jpg" alt="">
+        <div class="ghost r"></div><div class="ghost c"></div>
+        <div class="slice s1"></div><div class="slice s2"></div><div class="slice s3"></div>
+        <div class="nm-hero-trace"><span class="sweep"></span></div>
+        <div class="nm-hero-glow"></div><div class="nm-hero-scrim"></div>
+        <div class="nm-hero-scan"></div><div class="nm-hero-tear"></div>
+      </div>
+      <div class="nm-hero-type">
+        <h1 class="nm-hero-word">NEURO<span class="x">MOUSE</span></h1>
+        <div class="nm-hero-foot">
+          <p class="nm-hero-promise">Raw signal in. <b>Evidence</b> out.</p>
+          <button class="primary-action nm-hero-enter" type="button">Enter Workbench</button>
+        </div>
+      </div>
+    </section>
     <div class="app-shell">
       <header class="app-header">
         <div class="brand-block">
@@ -21,8 +39,8 @@
           <h1>NeuroMouse Workbench</h1>
         </div>
         <div class="header-status" aria-label="Dashboard dataset summary">
-          <span><strong>32</strong> channels</span>
-          <span><strong>420</strong> frames</span>
+          <span><strong id="header-channels">--</strong> channels</span>
+          <span><strong id="header-frames">--</strong> frames</span>
           <span><strong>offline</strong> toolbox</span>
         </div>
       </header>
@@ -84,36 +102,37 @@
           <section class="workbench" aria-labelledby="workbench-title">
             <div class="workbench-head">
               <div class="workbench-title-block">
-                <span class="workbench-kicker">Dashboard + toolbox</span>
-                <h2 id="workbench-title">Neural signal analysis workbench</h2>
+                <span class="workbench-kicker">Analysis command surface</span>
+                <h2 id="workbench-title">Neural signal workbench</h2>
                 <p>
-                  Drop saved neural data, run a curated analysis set, compare cohorts or training runs,
-                  and export a research-ready summary without opening Python for the first pass.
+                  Ingest saved EEG exports, select a comparison goal, inspect cohort separation,
+                  and export a reproducible first-pass report from the browser.
                 </p>
               </div>
               <div class="workbench-actions" aria-label="Workbench actions">
                 <button id="workbench-import" class="primary-action" type="button">Import Data</button>
-                <button id="workbench-report" type="button">Download Report</button>
+                <button id="workbench-demo" type="button">Load Demo Pair</button>
+                <button id="workbench-report" type="button">Preview Report</button>
               </div>
             </div>
 
             <div class="pipeline-strip" aria-label="Analysis pipeline">
-              <div class="pipeline-step is-ready">
+              <div class="pipeline-step is-ready" data-pipeline-step="ingest">
                 <span>01</span>
                 <strong>Ingest</strong>
                 <small>data.json or CSV ZIP</small>
               </div>
-              <div class="pipeline-step is-ready">
+              <div class="pipeline-step is-ready" data-pipeline-step="normalize">
                 <span>02</span>
                 <strong>Normalize</strong>
                 <small>channels, windows, metrics</small>
               </div>
-              <div class="pipeline-step">
+              <div class="pipeline-step" data-pipeline-step="compare">
                 <span>03</span>
                 <strong>Compare</strong>
                 <small>baseline, split, delta</small>
               </div>
-              <div class="pipeline-step">
+              <div class="pipeline-step" data-pipeline-step="report">
                 <span>04</span>
                 <strong>Report</strong>
                 <small>markdown export</small>
@@ -124,7 +143,13 @@
               <button id="workbench-drop-zone" class="workbench-drop-zone" type="button" aria-label="Import saved neural signal datasets">
                 <span class="drop-rail">Supported Now</span>
                 <strong>Drop NeuroMouse data.json, combined CSV ZIP, or Welch + geometry ZIP pair</strong>
-                <small>Imports feed the same comparison engine as the plots below.</small>
+                <small>Imports feed the same baseline, overlay, split, delta, and report engine as the plots below.</small>
+                <span class="drop-formats" aria-hidden="true">
+                  <span>JSON</span>
+                  <span>CSV ZIP</span>
+                  <span>Welch + geometry</span>
+                </span>
+                <span id="workbench-import-log" class="import-log" aria-live="polite"></span>
               </button>
 
               <div class="cohort-console" aria-label="Cohort comparison setup">
@@ -137,6 +162,12 @@
                     <option value="session-repeatability">Repeatability check</option>
                   </select>
                 </div>
+                <p id="workbench-scenario-detail" class="scenario-detail">Compare trained neural cultures against untrained controls using spectral geometry and synchrony markers.</p>
+                <div id="workbench-baseline-summary" class="baseline-summary" aria-label="Selected baseline"></div>
+                <label class="workbench-baseline-control" for="workbench-baseline-select">
+                  <span>Baseline</span>
+                  <select id="workbench-baseline-select" aria-label="Workbench baseline"></select>
+                </label>
                 <div id="workbench-status" class="workbench-status" aria-live="polite">Loading analysis workspace…</div>
                 <div id="workbench-comparisons" class="comparison-readout"></div>
                 <button id="workbench-open-comparison" class="console-link" type="button">Open Comparison Suite</button>
@@ -147,6 +178,7 @@
                   <span>Curated Toolbox</span>
                   <strong>Python depth, browser access</strong>
                 </div>
+                <div id="workbench-readiness" class="readiness-panel" aria-live="polite"></div>
                 <div class="toolbox-list">
                   <span>Spectral PSD</span>
                   <span>Channel geometry</span>
@@ -155,6 +187,7 @@
                   <span>Topology scan</span>
                   <span>Condition monitor</span>
                 </div>
+                <div id="workbench-quality" class="quality-list" aria-label="Data quality checks"></div>
               </div>
 
               <div id="workbench-metrics" class="workbench-metrics" aria-label="Workbench metrics"></div>
@@ -245,10 +278,12 @@
               <strong>Advanced Analysis</strong>
               <small>phase space, network, topology, monitor</small>
             </span>
-            <span class="toggle-chevron">▴</span>
+            <span class="toggle-chevron">▾</span>
           </button>
+          <p class="advanced-visible-fallback" style="margin:0 0 12px; color:#cbd5e1; font-size:0.92rem;">Original NeuroMouse advanced plots are below: Polar Alpha Chronomap, Kuramoto Animation, Channel Network, and TDA View.</p>
 
           <!-- ── Advanced Views ─────────────────────────────────────── -->
+          <!-- selectors: .panel-polar .panel-kuramoto .panel-network .panel-tda; default-open hook: setAdvancedOpen(true); -->
           <div id="advanced-views" style="display:grid">
 
             <section class="panel panel-phase panel-collapsible" aria-labelledby="phase-title">
@@ -264,7 +299,7 @@
               </div>
             </section>
 
-            <section class="panel panel-polar panel-collapsible is-expanded" aria-labelledby="polar-title">
+            <section class="panel panel-polar panel-collapsible" aria-labelledby="polar-title" hidden>
               <div class="panel-head">
                 <div>
                   <h2 id="polar-title">Polar Alpha Chronomap</h2>
@@ -277,7 +312,7 @@
               </div>
             </section>
 
-            <section class="panel panel-kuramoto panel-collapsible is-expanded" aria-labelledby="kuramoto-title">
+            <section class="panel panel-kuramoto panel-collapsible" aria-labelledby="kuramoto-title" hidden>
               <div class="panel-head">
                 <div>
                   <h2 id="kuramoto-title">Kuramoto Animation</h2>
@@ -290,7 +325,7 @@
               </div>
             </section>
 
-            <section class="panel panel-network panel-collapsible is-expanded" aria-labelledby="network-title">
+            <section class="panel panel-network panel-collapsible" aria-labelledby="network-title" hidden>
               <div class="panel-head">
                 <div>
                   <h2 id="network-title">Channel Network</h2>
@@ -303,7 +338,7 @@
               </div>
             </section>
 
-            <section class="panel panel-tda panel-collapsible is-expanded" aria-labelledby="tda-title">
+            <section class="panel panel-tda panel-collapsible" aria-labelledby="tda-title" hidden>
               <div class="panel-head">
                 <div>
                   <h2 id="tda-title">TDA View</h2>
@@ -361,76 +396,28 @@
       </footer>
     </div>
 
+    <dialog id="workbench-report-dialog" class="report-dialog" aria-labelledby="report-dialog-title">
+      <div class="report-dialog-shell">
+        <div class="report-dialog-head">
+          <div>
+            <span>Report Preview</span>
+            <h2 id="report-dialog-title">NeuroMouse Analysis Report</h2>
+          </div>
+          <button id="workbench-report-close" class="report-close" type="button" aria-label="Close report preview">×</button>
+        </div>
+        <div id="workbench-report-preview" class="report-preview"></div>
+        <div id="workbench-explain" class="explain-output" hidden aria-live="polite"></div>
+        <input id="workbench-explain-q" class="explain-ask" type="text" maxlength="500" placeholder="Optional: ask a question about this comparison…" aria-label="Ask a question about this data">
+        <div class="report-dialog-actions">
+          <button id="workbench-explain-btn" type="button">Explain in plain language</button>
+          <button id="workbench-report-download" class="primary-action" type="button">Download Markdown</button>
+          <button id="workbench-report-dismiss" type="button">Close</button>
+        </div>
+      </div>
+    </dialog>
+
     <div id="tooltip" class="tooltip" hidden></div>
-    <script type="module" src="./js/layout.js?v=0.11.0"></script>
-    <script>
-      (function () {
-        // ── Collapsible panels ──────────────────────────────────────────
-        document.querySelectorAll('.panel-collapsible').forEach(function (panel, index) {
-          var head = panel.querySelector('.panel-head');
-          var body = panel.querySelector('.panel-body');
-          var icon = panel.querySelector('.panel-toggle-icon');
-          var title = panel.querySelector('h2');
-          if (!head || !body || !icon) return;
-
-          if (!body.id) {
-            body.id = (title && title.id ? title.id : 'panel-' + index) + '-body';
-          }
-
-          icon.classList.add('panel-collapse-toggle');
-          head.setAttribute('role', 'button');
-          head.setAttribute('tabindex', '0');
-          head.setAttribute('aria-controls', body.id);
-
-          function syncPanelState() {
-            var expanded = panel.classList.contains('is-expanded');
-            var label = title ? title.textContent.trim() : 'panel';
-            icon.textContent = expanded ? '−' : '+';
-            head.setAttribute('aria-expanded', expanded ? 'true' : 'false');
-            head.setAttribute('aria-label', (expanded ? 'Collapse ' : 'Expand ') + label);
-            body.inert = !expanded;
-            body.setAttribute('aria-hidden', expanded ? 'false' : 'true');
-          }
-
-          function togglePanel() {
-            var expanded = panel.classList.toggle('is-expanded');
-            syncPanelState();
-            // Notify views of resize after animation settles.
-            if (expanded) {
-              setTimeout(function () { window.dispatchEvent(new Event('resize')); }, 320);
-            }
-          }
-
-          head.addEventListener('click', function (event) {
-            var target = event.target;
-            if (target && target.nodeType !== 1) target = target.parentElement;
-            if (target && target.closest('a, input, select, textarea, label')) return;
-            togglePanel();
-          });
-          head.addEventListener('keydown', function (event) {
-            if (event.key !== 'Enter' && event.key !== ' ') return;
-            event.preventDefault();
-            togglePanel();
-          });
-          syncPanelState();
-        });
-
-        // ── Advanced Analysis toggle ────────────────────────────────────
-        var advBtn = document.getElementById('advanced-toggle');
-        var advSection = document.getElementById('advanced-views');
-        function setAdvancedOpen(open) {
-          advSection.style.display = open ? 'grid' : 'none';
-          advBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
-          advBtn.querySelector('.toggle-chevron').textContent = open ? '▴' : '▾';
-          if (open) {
-            setTimeout(function () { window.dispatchEvent(new Event('resize')); }, 50);
-          }
-        }
-        advBtn.addEventListener('click', function () {
-          var open = advSection.style.display !== 'none';
-          setAdvancedOpen(!open);
-        });
-      }());
-    </script>
+    <script type="module" src="./js/layout.js"></script>
+    <script type="module" src="./js/ui-panels.js"></script>
   </body>
 </html>

@@ -50,6 +50,31 @@ def index() -> HTMLResponse:
     return HTMLResponse((STATIC_DIR / "index.html").read_text())
 
 
+@app.get("/advanced-analysis")
+def advanced_analysis_page() -> RedirectResponse:
+    return RedirectResponse(url="/#higuchiDirectCard", status_code=307)
+
+
+@app.get("/higuchi")
+@app.get("/higuchi-fractal-dimension")
+def higuchi_page() -> RedirectResponse:
+    return RedirectResponse(url="/#higuchiDirectCard", status_code=307)
+
+
+@app.get("/embedded-fractal-dimension")
+@app.get("/embedded-fd")
+def embedded_fd_page() -> RedirectResponse:
+    return RedirectResponse(url="/#embeddedFdDirectCard", status_code=307)
+
+
+@app.get("/api/neuromouse/advanced-plots")
+def advanced_plot_summary() -> JSONResponse:
+    from neuro_importer_neuromouse.advanced_plot_renderer import load_best_dataset, plot_summary_payload
+
+    data, info = load_best_dataset(manager, NEUROMOUSE_DIR)
+    return JSONResponse(plot_summary_payload(data, info))
+
+
 
 @app.get("/neuromouse-job/{job_id}/", response_class=HTMLResponse)
 def neuromouse_job_page(job_id: str) -> HTMLResponse:
@@ -347,6 +372,90 @@ def neuromouse_latest_page() -> HTMLResponse:
         html = bootstrap + html
     return HTMLResponse(html)
 
+
+
+
+def _recording_dir_has_signal(path: str | Path) -> bool:
+    root = Path(path).expanduser()
+    return any((root / rel).exists() for rel in ("signal.npy", "processed/signal.npy", "raw/signal.npy"))
+
+
+def _latest_converted_recording_dir() -> str | None:
+    """Return the newest converted recording folder with canonical signal.npy."""
+    latest = manager.find_latest_neuromouse_dataset()
+    if latest:
+        data_path = Path(str(latest.get("data_json") or "")).expanduser()
+        if data_path.exists():
+            try:
+                data = json.loads(data_path.read_text(encoding="utf-8"))
+                source_dir = data.get("meta", {}).get("source_recording_dir")
+                if source_dir and _recording_dir_has_signal(source_dir):
+                    return str(Path(source_dir).expanduser())
+            except Exception:
+                pass
+    candidates: list[Path] = []
+    outputs_root = manager.workspace / "outputs"
+    if outputs_root.exists():
+        candidates.extend(p.parent for p in outputs_root.rglob("signal.npy") if "neuromouse" not in p.parts and "speedmouse" not in p.parts)
+    with manager.lock:
+        records = list(manager.jobs.values())
+    for record in records:
+        if record.output_dir:
+            root = Path(record.output_dir).expanduser()
+            if root.exists():
+                candidates.extend(p.parent for p in root.rglob("signal.npy") if "neuromouse" not in p.parts and "speedmouse" not in p.parts)
+    unique = {str(path.resolve()): path for path in candidates if path.exists()}
+    if not unique:
+        return None
+    newest = max(unique.values(), key=lambda path: (path / "signal.npy").stat().st_mtime)
+    return str(newest)
+
+
+@app.get("/api/advanced-methods")
+def advanced_methods() -> JSONResponse:
+    from neuro_importer_analysis import list_advanced_methods
+
+    return JSONResponse({
+        "ok": True,
+        "methods": list_advanced_methods(),
+        "latest_recording_dir": _latest_converted_recording_dir(),
+    })
+
+
+@app.get("/api/advanced-methods/latest-recording")
+def advanced_methods_latest_recording() -> JSONResponse:
+    latest = _latest_converted_recording_dir()
+    if not latest:
+        return JSONResponse({"ok": False, "error": "No converted recording folder with signal.npy found yet."}, status_code=404)
+    return JSONResponse({"ok": True, "recording_dir": latest})
+
+
+@app.post("/api/advanced-methods/run")
+def advanced_methods_run(payload: dict[str, Any]) -> JSONResponse:
+    from neuro_importer_analysis import run_advanced_method
+
+    method_id = str(payload.get("method_id") or payload.get("method") or "").strip()
+    if not method_id:
+        return JSONResponse({"ok": False, "error": "Provide method_id."}, status_code=400)
+    recording_dir = str(payload.get("recording_dir") or "").strip()
+    if not recording_dir or recording_dir.lower() == "latest":
+        latest = _latest_converted_recording_dir()
+        if not latest:
+            return JSONResponse({"ok": False, "error": "Provide a converted recording folder, or run Convert/Analyze first so a latest recording exists."}, status_code=400)
+        recording_dir = latest
+    p = Path(recording_dir).expanduser()
+    if not p.exists():
+        return JSONResponse({"ok": False, "error": f"Recording folder does not exist: {p}"}, status_code=404)
+    try:
+        result = run_advanced_method(method_id, p, payload.get("params") or {})
+        out_dir = p / "advanced_methods"
+        out_dir.mkdir(parents=True, exist_ok=True)
+        out_path = out_dir / f"{method_id}_result.json"
+        out_path.write_text(json.dumps(result, indent=2), encoding="utf-8")
+        result["saved_result_json"] = str(out_path)
+        return JSONResponse(result)
+    except Exception as exc:
+        return JSONResponse({"ok": False, "error": repr(exc), "method_id": method_id, "recording_dir": str(p)}, status_code=500)
 
 @app.get("/api/health")
 def health() -> dict[str, Any]:

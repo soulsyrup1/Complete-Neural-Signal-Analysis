@@ -15,14 +15,14 @@ import {
   scaleLinear,
 } from "./chart-utils.js";
 
-export function initTdaView(root, data, tooltip) {
+export function initTdaView(root, data, tooltip, context = {}) {
+  const document = context.document ?? globalThis.document;
   const section = root?.closest("section");
-  if (!root) return () => {};
-  if (section) section.hidden = false;
-  if (data?.tda?.status !== "computed") {
-    renderUnavailable(root, "TDA View", "This dataset did not include TDA persistence arrays. Re-run Convert or Analyze in NeuroMouse with v0.11.0 so the backend generates the TDA point cloud and persistence view from the uploaded continuous signal.");
+  if (!root || data.tda?.status !== "computed") {
+    if (section) section.hidden = true;
     return () => {};
   }
+  section.hidden = false;
 
   const disposables = createDisposables();
   const points = buildPersistencePoints(data);
@@ -38,6 +38,17 @@ export function initTdaView(root, data, tooltip) {
   scatter.setAttribute("aria-label", "TDA persistence scatter");
   barcode.setAttribute("role", "img");
   barcode.setAttribute("aria-label", "TDA persistence barcode");
+
+  function panel(title, canvas) {
+    const wrapper = document.createElement("div");
+    wrapper.className = "tda-panel";
+    const heading = document.createElement("div");
+    heading.className = "tda-subtitle";
+    heading.textContent = title;
+    wrapper.append(heading, canvas);
+    return wrapper;
+  }
+
   root.innerHTML = "";
   root.append(
     panel("Persistence", scatter),
@@ -229,8 +240,4 @@ function buildPersistencePoints(data) {
       lifetime: death - birth,
     })),
   ];
-}
-
-function renderUnavailable(root, title, message) {
-  root.innerHTML = `<div class="view-error" role="status"><strong>${title}</strong><span>${message}</span></div>`;
 }

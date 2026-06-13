@@ -1,4 +1,4 @@
-import { getFrame, onFrameChange } from "../state.js";
+import * as defaultState from "../state.js";
 import { createDisposables } from "../disposables.js";
 import {
   ACTIVE_COLOR,
@@ -13,21 +13,16 @@ import {
   resizeCanvas,
 } from "./chart-utils.js";
 
-export function initPolarChronomap(root, data, tooltip) {
+export function initPolarChronomap(root, data, tooltip, context = {}) {
+  const state = context.state ?? defaultState;
+  const document = context.document ?? globalThis.document;
+  const { getFrame, onFrameChange } = state;
   const section = root?.closest("section");
-  if (!root) return () => {};
-  if (section) section.hidden = false;
-  const chronomap0 = data?.polar_chronomap ?? null;
-  const validChronomap = chronomap0
-    && Array.isArray(chronomap0.time)
-    && Array.isArray(chronomap0.posterior_alpha)
-    && Array.isArray(chronomap0.frontal_alpha)
-    && Array.isArray(chronomap0.balance)
-    && chronomap0.time.length > 1;
-  if (!validChronomap) {
-    renderUnavailable(root, "Polar Alpha Chronomap", "This dataset did not include polar alpha chronomap arrays. Re-run Convert or Analyze in NeuroMouse with v0.11.0 so the backend generates polar_chronomap from the uploaded continuous signal.");
+  if (!root || !data.polar_chronomap) {
+    if (section) section.hidden = true;
     return () => {};
   }
+  section.hidden = false;
 
   const disposables = createDisposables();
   const canvas = document.createElement("canvas");
@@ -155,8 +150,4 @@ export function initPolarChronomap(root, data, tooltip) {
   disposables.add(onFrameChange(draw));
   disposables.add(observeCanvas(canvas, draw));
   return disposables.dispose;
-}
-
-function renderUnavailable(root, title, message) {
-  root.innerHTML = `<div class="view-error" role="status"><strong>${title}</strong><span>${message}</span></div>`;
 }

@@ -22,7 +22,7 @@ from neuro_importer_analysis import run_comparative_analysis
 from neuro_importer_neuromouse import write_speedmouse_dataset, build_speedmouse_comparison_pack
 
 
-APP_VERSION = "0.11.0"
+APP_VERSION = "0.11.15"
 
 SUPPORTED_UPLOAD_SUFFIXES = {
     # Archive uploads; extracted safely before primary-file discovery

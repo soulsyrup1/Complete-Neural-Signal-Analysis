@@ -1,6 +1,6 @@
 # Neuro Signal Importer + NeuroMouse Workbench
 
-**Version:** `0.10.2-zip-archive-mat-support`  
+**Version:** `0.11.14`  
 **Purpose:** Convert, standardize, analyze, replay, and visualize continuous neural signal data from many file formats using a local Python backend and an HTML/NeuroMouse browser workbench.
 
 This project is designed for **continuous neural signal data**: EEG, ECoG, iEEG, MEA, organoid recordings, FinalSpark-style data, Cortical Labs-style data, HDF5/NWB-style recordings, MATLAB structures, NumPy arrays, tabular exports, and related neurophysiology signal files.
@@ -876,32 +876,32 @@ This release makes sidecar handling stricter and the raw job logs more explicit.
 For EEGLAB/BIDS uploads, upload the `.set` and `.fdt` together, but the raw log should show only the `.set` under `primary_files`. The `.fdt` should appear under `skipped` or `promoted`, not under `Converting ...`.
 
 
-### v0.11.0 Advanced NeuroMouse Plot Generation
+### v0.11.1 Advanced NeuroMouse Plot Generation
 
 Backend-generated NeuroMouse datasets now include the same major analysis objects used by the original NeuroMouse demo views: Welch PSD heatmaps, spectral geometry, polar alpha chronomap, Kuramoto phase animation, channel network / PLV synchrony, Higuchi fractal-dimension traces, area-normalized PSD, and a lightweight TDA persistence view. These objects are generated from the uploaded/converted `signal.npy`, not from the bundled demo `data.json`.
 
 
-## v0.11.0 visualization stability fix
+## v0.11.1 visualization stability fix
 
 This release restores the core NeuroMouse plotting path and makes the browser workbench crash-resistant. Backend-generated NeuroMouse datasets still include the original plot families, but the browser now validates and normalizes generated data before drawing. If one optional advanced view cannot render, the PSD heatmap, centroid, geometry stack, channel grid, playback, and other working views remain available instead of the entire page failing.
 
-## v0.11.0 NeuroMouse frontend visualization restore
+## v0.11.1 NeuroMouse frontend visualization restore
 
-This patch fixes a browser-side NeuroMouse data normalization bug introduced in the visualization-stability layer. The bug truncated frequency and time arrays to one value before rendering, which could make the NeuroMouse buttons appear inactive and leave the PSD, centroid, geometry, playback, and advanced visualization panels blank. v0.11.0 preserves the full generated `data.json` arrays, keeps the v0.11.0 advanced analysis outputs, and keeps per-view error isolation so one optional advanced view cannot break the whole workbench.
+This patch fixes a browser-side NeuroMouse data normalization bug introduced in the visualization-stability layer. The bug truncated frequency and time arrays to one value before rendering, which could make the NeuroMouse buttons appear inactive and leave the PSD, centroid, geometry, playback, and advanced visualization panels blank. v0.11.1 preserves the full generated `data.json` arrays, keeps the v0.11.1 advanced analysis outputs, and keeps per-view error isolation so one optional advanced view cannot break the whole workbench.
 
 
-## v0.11.0 NeuroMouse frontend rollback/stability fix
+## v0.11.1 NeuroMouse frontend rollback/stability fix
 
 This release restores the known-good NeuroMouse browser frontend path and removes the browser-side normalization layer that could stop buttons and plots from initializing. The backend can still generate richer NeuroMouse `data.json` files from converted recordings, but the browser now receives them through the stable loader/plotting code. The bundled demo `data/data.json` is restored to the original NeuroMouse reference dataset so generated backend datasets cannot look identical to an accidentally-overwritten demo file.
 
 The local FastAPI server now sends no-cache headers for launcher and NeuroMouse assets, and the HTML entry points use updated cache-busting query strings. After installing this version, restart the server and hard-refresh once if the browser was open during an older version.
 
 
-## v0.11.0 NeuroMouse blank-page/button recovery fix
+## v0.11.1 NeuroMouse blank-page/button recovery fix
 
 This patch changes the NeuroMouse browser startup so controls are bound before plotting modules initialize. Each visualization panel is now isolated: if PSD, centroid, geometry, channel grid, Kuramoto, network, TDA, or another optional view throws a browser-side error, the rest of the NeuroMouse workbench continues to load and that panel shows a visible error message instead of blanking the whole page. The patch also cache-busts the NeuroMouse JavaScript and CSS so stale broken frontend files are not reused after updating.
 
-## v0.11.0 NeuroMouse persisted-job data endpoint fix
+## v0.11.1 NeuroMouse persisted-job data endpoint fix
 
 This patch fixes a NeuroMouse startup error where a generated dataset URL such as
 `/api/jobs/<job_id>/neuromouse/data.json` could return HTTP 404 after the local
@@ -913,11 +913,71 @@ job-specific NeuroMouse pages usable as long as the job output folder still
 exists on disk.
 
 
-## v0.11.0 NeuroMouse latest-dataset 404 recovery
+## v0.11.1 NeuroMouse latest-dataset 404 recovery
 
 This patch fixes NeuroMouse startup errors where an older browser-stored job URL could request `/api/jobs/<old_job_id>/neuromouse/data.json` and return HTTP 404 even after a newer conversion produced valid NeuroMouse output. The launcher now asks the backend for the newest generated NeuroMouse dataset before trusting local browser storage, plain `/neuromouse/` prefers the newest backend dataset, `/neuromouse-latest/` hard-binds NeuroMouse to the newest generated output, and old job-specific data endpoints fall back to the newest generated dataset instead of blanking the NeuroMouse page when a stale job id is requested.
 
 
-## v0.11.0 update
+## v0.11.1 update
 
 The app now carries only the custom integrated NeuroMouse workbench under `neuro_signal_webapp/neuromouse/`. The old `vendor/neuromouse_original/` reference copy was removed because the upstream NeuroMouse repository is expected to change regularly. The integrated copy remains local so the Neuro Signal backend can reliably load generated datasets, archive conversions, live replay streams, and variable-electrode advanced visualizations.
+
+## v0.11.1 native Advanced Methods runner
+
+The launcher now includes an **Advanced Methods** tab that exposes NeuroMouse-style backend method analysis directly inside the Neuro Signal app instead of requiring the original NeuroMouse backend SDK UI. It runs against a converted recording folder containing `signal.npy`, `channels.csv`, and `metadata.json`, or can auto-select the latest converted recording.
+
+Available native methods:
+
+- `band_power_summary`: Welch PSD band-power and relative-power table for delta/theta/alpha/beta/gamma or custom frequency ranges.
+- `spike_detect`: threshold-based per-channel event/spike detection from continuous signals, with polarity, refractory, optional filtering, and stored spike-time output.
+- `network_burst`: multi-channel burst timeline built from detected spikes/events.
+- `electrode_connectivity`: pairwise binned spike-train cross-correlation matrix and strongest-link table.
+
+New local API endpoints:
+
+```text
+GET  /api/advanced-methods
+GET  /api/advanced-methods/latest-recording
+POST /api/advanced-methods/run
+```
+
+Each run writes `<converted_recording>/advanced_methods/<method_id>_result.json` so method outputs are reproducible and can be inspected outside the browser.
+
+
+## v0.11.14 NeuroMouse advanced plot sections in launcher
+
+The main web launcher now includes a dedicated **NeuroMouse Plots** tab with visible sections for Polar Alpha Chronomap, Kuramoto Animation, Channel Network, and TDA View. These panels render from the latest generated NeuroMouse `data.json` so users no longer need to open the full embedded NeuroMouse workbench just to confirm that the advanced NeuroMouse plot objects were generated. The full workbench remains available from the same tab.
+
+## v0.11.14 NeuroMouse advanced plot visibility fix
+
+This patch makes the four NeuroMouse advanced visualization sections visible immediately when the web GUI opens, instead of relying on users noticing an added tab. The launcher now opens on **NeuroMouse Plots** by default, wraps the tab bar on narrow browser windows, highlights the plot tab, provides an Import / Convert button from the plots page, and includes an Import-page reminder listing **Polar Alpha Chronomap**, **Kuramoto Animation**, **Channel Network**, and **TDA View**. The browser initializes placeholders immediately and auto-loads the latest generated NeuroMouse `data.json` when available.
+
+## v0.11.14 Advanced Analysis visibility fix
+
+This patch removes the confusing separate NeuroMouse Plots navigation requirement. The main launcher now exposes **Polar Alpha Chronomap**, **Kuramoto Animation**, **Channel Network**, and **TDA View** directly inside the active **Advanced Analysis** tab, above the backend method runner. The Import / Convert landing card now points to Advanced Analysis. The embedded original NeuroMouse workbench also starts its Advanced Analysis drawer closed and reliably opens the requested advanced panels when clicked.
+
+
+## v0.11.14 Advanced Analysis force-visible fix
+
+The four requested NeuroMouse advanced sections are now forced visible in the main launcher and in the embedded NeuroMouse workbench. The launcher no longer depends on tab state to show Polar Alpha Chronomap, Kuramoto Animation, Channel Network, or TDA View. The embedded workbench opens Advanced Analysis by default and keeps those four panels expanded.
+
+## v0.11.14 Original NeuroMouse advanced plotting integration
+
+This build replaces the bundled modified NeuroMouse browser workbench with the original NeuroMouse plotting/runtime files from the provided NeuroMouse repository for the advanced visualization path. The embedded workbench now includes the original `index.html`, `style.css`, `js/viewer.js`, `js/ui-panels.js`, `js/viewer-structure.js`, and original plot modules for Polar Alpha Chronomap, Kuramoto Animation, Channel Network, and TDA View. The importer/analyzer only adds a small dataset binding hook so generated backend `data.json` files load inside the original workbench.
+
+
+## v0.11.14 Higuchi Fractal Dimension backend analysis
+
+This update adds a native Advanced Methods backend analysis for Higuchi fractal dimension. The method computes per-channel HFD, log-log fit diagnostics, scalp/channel layout points, regional summaries, left-right asymmetry, rolling temporal stability, temporal variability, and complexity-vs-instability data. The Advanced Analysis frontend now renders the returned backend JSON directly as interactive-style canvas plots instead of relying on hidden NeuroMouse conditional panels.
+
+## v0.11.14 Higuchi-first Advanced Analysis GUI
+
+This version makes the new backend Higuchi Fractal Dimension workflow visibly first-class in the web GUI. Advanced Analysis now opens on a dedicated Higuchi card with a direct run button, mode selector, segment fields, and frontend-rendered plots. The older NeuroMouse Polar/Kuramoto/Network/TDA experiments remain available under a collapsed legacy section so they do not obscure the working Higuchi workflow.
+
+
+## v0.11.14 Simplified dashboard + embedded fractal dimension
+
+- Default GUI now opens to a small dashboard with five primary actions: upload/convert, compare two dataset groups, open normal NeuroMouse, run Higuchi fractal dimension, and run embedded attractor fractal dimension.
+- Extra tabs are hidden behind a **More options** button to avoid overwhelming first-time users.
+- Added native backend method `embedded_fractal_dimension`, adapted from the embedded fractal-dimension research script. It computes box-counting FD and sampled Grassberger-Procaccia correlation dimension D2 across 2D–10D attractor embeddings, using precomputed embedding files when available or generated delay embeddings from `signal.npy`.
+- Embedded FD results are plotted directly in the frontend: D2/box curves, mean dimensions, heatmaps, channel complexity ranking, D2-vs-box scatter, fit quality control, and diagnostic fit plots.
