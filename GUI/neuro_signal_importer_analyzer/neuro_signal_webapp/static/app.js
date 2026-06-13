@@ -48,6 +48,11 @@ function refreshFileList() {
   });
 }
 
+
+function appendSelectedFiles(form) {
+  selectedFiles.forEach(f => form.append('files', f, f.webkitRelativePath || f.name));
+}
+
 function collectOptions() {
   const val = (id) => $(id).value.trim();
   const numOrNull = (id) => val(id) ? Number(val(id)) : null;
@@ -109,7 +114,7 @@ function connectJobEvents(jobId) {
 async function startConvert(fullAnalyze = false) {
   if (!selectedFiles.length) { alert('Choose or drop at least one file.'); return; }
   const form = new FormData();
-  selectedFiles.forEach(f => form.append('files', f));
+  appendSelectedFiles(form);
   const options = collectOptions();
   options.make_windows = fullAnalyze ? true : options.make_windows;
   form.append('options_json', JSON.stringify(options));
@@ -125,7 +130,7 @@ async function startConvert(fullAnalyze = false) {
 async function inspectUploads() {
   if (!selectedFiles.length) { alert('Choose or drop at least one file.'); return; }
   const form = new FormData();
-  selectedFiles.forEach(f => form.append('files', f));
+  appendSelectedFiles(form);
   const res = await fetch('/api/jobs/inspect-upload', { method: 'POST', body: form });
   const data = await res.json();
   showTab('resultsTab');
@@ -172,7 +177,9 @@ async function stopLive() {
 
 $('chooseFilesBtn').addEventListener('click', () => $('fileInput').click());
 $('fileInput').addEventListener('change', (e) => { selectedFiles = Array.from(e.target.files); refreshFileList(); });
-$('clearFilesBtn').addEventListener('click', () => { selectedFiles = []; $('fileInput').value = ''; refreshFileList(); });
+if ($('folderInput')) $('folderInput').addEventListener('change', (e) => { selectedFiles = Array.from(e.target.files); refreshFileList(); });
+if ($('chooseFolderBtn')) $('chooseFolderBtn').addEventListener('click', () => $('folderInput').click());
+$('clearFilesBtn').addEventListener('click', () => { selectedFiles = []; $('fileInput').value = ''; if ($('folderInput')) $('folderInput').value = ''; refreshFileList(); });
 $('inspectBtn').addEventListener('click', inspectUploads);
 $('convertBtn').addEventListener('click', () => startConvert(false));
 $('fullAnalyzeBtn').addEventListener('click', () => startConvert(true));
@@ -194,67 +201,76 @@ dropZone.addEventListener('drop', (e) => {
 
 checkHealth();
 
-// ---- v0.8 SpeedMouse integration ----
+// ---- v0.8 NeuroMouse integration ----
 function openUrl(url) { window.open(url, '_blank'); }
 
-function showSpeedMouseOpenLink(url, label = 'Open generated SpeedMouse dataset') {
+function showNeuroMouseOpenLink(url, label = 'Open generated NeuroMouse dataset from this job') {
   if (!url) return;
-  const resultBox = $('resultJson');
   const output = $('outputPath');
   const absolute = new URL(url, location.origin).href;
-  if (output) output.innerHTML = `${currentOutputPath || ''}<br><a class="action-link" href="${absolute}" target="_blank" rel="noopener">${label}</a>`;
-  const box = $('speedmouseGeneratedLinkBox');
+  const datasetUrl = datasetFetchUrlFromNeuroMouseUrl(url);
+  const datasetAbs = datasetUrl ? new URL(datasetUrl, location.origin).href : '';
+  if (output) output.innerHTML = `${currentOutputPath || ''}<br><a class="action-link" href="${absolute}" target="_blank" rel="noopener">${label}</a>${datasetAbs ? `<br><small>generated data.json: ${datasetAbs}</small>` : ''}`;
+  const box = $('neuromouseGeneratedLinkBox');
   if (box) {
-    box.innerHTML = `<a class="primary-link" href="${absolute}" target="_blank" rel="noopener">${label}</a><br><small>${absolute}</small>`;
+    box.innerHTML = `<a class="primary-link" href="${absolute}" target="_blank" rel="noopener">${label}</a><br><small>${absolute}</small>${datasetAbs ? `<br><small>generated data.json: ${datasetAbs}</small>` : ''}`;
   }
 }
 
-function openBackendSpeedMouseUrl(url) {
+function openBackendNeuroMouseUrl(url) {
   if (!url) return;
-  showSpeedMouseOpenLink(url);
-  // WebSocket-completion popups can be blocked by browsers, so also keep a
-  // visible link and attempt a same-origin new tab with a timestamp cache-buster.
+  showNeuroMouseOpenLink(url);
+  // For generated NeuroMouse datasets, navigate this app tab. Popup blockers
+  // cannot prevent this, and it prevents users from accidentally viewing the
+  // default /neuromouse/data/data.json demo tab.
   try {
     const absolute = new URL(url, location.origin);
     if (!absolute.searchParams.has('t')) absolute.searchParams.set('t', Date.now().toString());
-    const opened = window.open(absolute.toString(), '_blank', 'noopener');
-    if (!opened) log('Popup blocked; use the generated SpeedMouse link in Results.');
-  } catch { openUrl(url); }
+    const datasetUrl = datasetFetchUrlFromNeuroMouseUrl(absolute.toString());
+    if (datasetUrl) {
+      localStorage.setItem('NEURO_SIGNAL_LAST_BACKEND_DATASET_URL', new URL(datasetUrl, location.origin).pathname + new URL(datasetUrl, location.origin).search);
+    }
+    localStorage.setItem('NEURO_SIGNAL_LAST_NEUROMOUSE_URL', absolute.pathname + absolute.search);
+    log('Opening generated NeuroMouse dataset in this tab', { url: absolute.toString(), dataset_url: datasetUrl });
+    setTimeout(() => { window.location.assign(absolute.toString()); }, 650);
+  } catch {
+    window.location.assign(url);
+  }
 }
 
 
-async function analyzeUploadsInSpeedMouse() {
+async function analyzeUploadsInNeuroMouse() {
   if (!selectedFiles.length) { alert('Choose or drop at least one file first.'); return; }
   const form = new FormData();
-  selectedFiles.forEach(f => form.append('files', f));
+  appendSelectedFiles(form);
   const options = collectOptions();
-  options.speedmouse_max_analysis_samples = 240000;
-  options.speedmouse_max_windows = 600;
+  options.neuromouse_max_analysis_samples = 240000;
+  options.neuromouse_max_windows = 600;
   form.append('options_json', JSON.stringify(options));
   if (options.output_dir) form.append('output_dir', options.output_dir);
-  setProgress(1, 'SpeedMouse analysis started', 'Uploading and converting files...');
+  setProgress(1, 'NeuroMouse analysis started', 'Uploading and converting files...');
   showTab('resultsTab');
-  const res = await fetch('/api/jobs/analyze-speedmouse-upload', { method: 'POST', body: form });
+  const res = await fetch('/api/jobs/analyze-neuromouse-upload', { method: 'POST', body: form });
   const data = await res.json();
   if (data.error) { alert(data.error); return; }
   connectJobEvents(data.job_id);
 }
 
-async function buildSpeedMouseFromConverted() {
-  const dirs = $('speedmouseConvertedDirs').value.split('\n').map(x => x.trim()).filter(Boolean);
+async function buildNeuroMouseFromConverted() {
+  const dirs = $('neuromouseConvertedDirs').value.split('\n').map(x => x.trim()).filter(Boolean);
   if (!dirs.length) { alert('Provide at least one converted recording folder.'); return; }
   const payload = {
     recording_dirs: dirs,
-    output_dir: $('speedmouseOutput').value.trim() || null,
+    output_dir: $('neuromouseOutput').value.trim() || null,
     options: { sampling_rate: $('samplingRate').value.trim() || null }
   };
-  const res = await fetch('/api/jobs/speedmouse-from-converted', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
+  const res = await fetch('/api/jobs/neuromouse-from-converted', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
   const data = await res.json();
   if (data.error) { alert(data.error); return; }
   connectJobEvents(data.job_id);
 }
 
-async function compareGroupsInSpeedMouse() {
+async function compareGroupsInNeuroMouse() {
   const groupA = $('groupA').value.split('\n').map(x => x.trim()).filter(Boolean);
   const groupB = $('groupB').value.split('\n').map(x => x.trim()).filter(Boolean);
   if (!groupA.length || !groupB.length) { alert('Provide at least one converted folder in Group A and Group B.'); return; }
@@ -262,33 +278,33 @@ async function compareGroupsInSpeedMouse() {
     group_a: groupA,
     group_b: groupB,
     output_dir: $('compareOutput').value.trim() || null,
-    options: { comparison_name: $('comparisonName').value.trim() || 'speedmouse_comparison', sampling_rate: $('samplingRate').value.trim() || null }
+    options: { comparison_name: $('comparisonName').value.trim() || 'neuromouse_comparison', sampling_rate: $('samplingRate').value.trim() || null }
   };
-  const res = await fetch('/api/jobs/compare-speedmouse', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
+  const res = await fetch('/api/jobs/compare-neuromouse', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
   const data = await res.json();
   if (data.error) { alert(data.error); return; }
   connectJobEvents(data.job_id);
 }
 
-function openSpeedMouseLiveReplay() {
-  const source = $('speedmouseLiveSignal').value.trim() || $('liveSignal').value.trim();
+function openNeuroMouseLiveReplay() {
+  const source = $('neuromouseLiveSignal').value.trim() || $('liveSignal').value.trim();
   if (!source) { alert('Provide a signal.npy path.'); return; }
   const params = new URLSearchParams();
   params.set('source', source);
-  const channels = $('speedmouseLiveChannels').value.trim() || $('liveChannels').value.trim();
-  const metadata = $('speedmouseLiveMetadata').value.trim() || $('liveMetadata').value.trim();
-  const fs = $('speedmouseLiveFs').value.trim() || $('liveFs').value.trim();
-  const speed = $('speedmouseLiveSpeed').value.trim() || '1';
+  const channels = $('neuromouseLiveChannels').value.trim() || $('liveChannels').value.trim();
+  const metadata = $('neuromouseLiveMetadata').value.trim() || $('liveMetadata').value.trim();
+  const fs = $('neuromouseLiveFs').value.trim() || $('liveFs').value.trim();
+  const speed = $('neuromouseLiveSpeed').value.trim() || '1';
   if (channels) params.set('channels_csv', channels);
   if (metadata) params.set('metadata_json', metadata);
   if (fs) params.set('fs', fs);
   params.set('speed', speed);
   const wsProto = location.protocol === 'https:' ? 'wss' : 'ws';
-  const wsUrl = `${wsProto}://${location.host}/ws/speedmouse/live?${params.toString()}`;
-  openUrl(`/speedmouse/?live_ws=${encodeURIComponent(wsUrl)}`);
+  const wsUrl = `${wsProto}://${location.host}/ws/neuromouse/live?${params.toString()}`;
+  openUrl(`/neuromouse/?live_ws=${encodeURIComponent(wsUrl)}`);
 }
 
-// Extend connectJobEvents to auto-open SpeedMouse links when present.
+// Extend connectJobEvents to auto-open NeuroMouse links when present.
 const _oldConnectJobEvents = connectJobEvents;
 connectJobEvents = function(jobId) {
   currentJobId = jobId;
@@ -308,8 +324,8 @@ connectJobEvents = function(jobId) {
       $('outputPath').textContent = currentOutputPath || '';
       $('resultJson').textContent = JSON.stringify(data.result || data, null, 2);
       const r = data.result || {};
-      if (r.primary_speedmouse_url) openBackendSpeedMouseUrl(r.primary_speedmouse_url);
-      if (r.speedmouse_comparison_url) openBackendSpeedMouseUrl(r.speedmouse_comparison_url);
+      if ((r.primary_neuromouse_url || r.primary_neuromouse_url)) openBackendNeuroMouseUrl((r.primary_neuromouse_url || r.primary_neuromouse_url));
+      if ((r.neuromouse_comparison_url || r.neuromouse_comparison_url)) openBackendNeuroMouseUrl((r.neuromouse_comparison_url || r.neuromouse_comparison_url));
       ws.close();
     }
     if (data.status === 'failed') {
@@ -323,59 +339,59 @@ connectJobEvents = function(jobId) {
   ws.onerror = () => log('WebSocket error');
 };
 
-if ($('openSpeedMouseBtn')) $('openSpeedMouseBtn').addEventListener('click', () => openUrl('/speedmouse/'));
-if ($('speedmouseAnalyzeBtn')) $('speedmouseAnalyzeBtn').addEventListener('click', analyzeUploadsInSpeedMouse);
-if ($('analyzeSpeedMouseBtn2')) $('analyzeSpeedMouseBtn2').addEventListener('click', analyzeUploadsInSpeedMouse);
-if ($('speedmouseFromConvertedBtn')) $('speedmouseFromConvertedBtn').addEventListener('click', buildSpeedMouseFromConverted);
-if ($('speedmouseCompareBtn')) $('speedmouseCompareBtn').addEventListener('click', compareGroupsInSpeedMouse);
-if ($('speedmouseCompareBtn2')) $('speedmouseCompareBtn2').addEventListener('click', compareGroupsInSpeedMouse);
-if ($('openSpeedMouseLiveBtn')) $('openSpeedMouseLiveBtn').addEventListener('click', openSpeedMouseLiveReplay);
+if ($('openNeuroMouseBtn')) $('openNeuroMouseBtn').addEventListener('click', () => openUrl('/neuromouse/?demo=1'));
+if ($('neuromouseAnalyzeBtn')) $('neuromouseAnalyzeBtn').addEventListener('click', analyzeUploadsInNeuroMouse);
+if ($('analyzeNeuroMouseBtn2')) $('analyzeNeuroMouseBtn2').addEventListener('click', analyzeUploadsInNeuroMouse);
+if ($('neuromouseFromConvertedBtn')) $('neuromouseFromConvertedBtn').addEventListener('click', buildNeuroMouseFromConverted);
+if ($('neuromouseCompareBtn')) $('neuromouseCompareBtn').addEventListener('click', compareGroupsInNeuroMouse);
+if ($('neuromouseCompareBtn2')) $('neuromouseCompareBtn2').addEventListener('click', compareGroupsInNeuroMouse);
+if ($('openNeuroMouseLiveBtn')) $('openNeuroMouseLiveBtn').addEventListener('click', openNeuroMouseLiveReplay);
 
-// ---- v0.9 complete SpeedMouse workbench + quick visualization layer ----
-let latestSpeedMouseUrl = null;
-let latestSpeedMouseComparisonUrl = null;
-let latestSpeedMouseData = null;
+// ---- v0.9 complete NeuroMouse workbench + quick visualization layer ----
+let latestNeuroMouseUrl = null;
+let latestNeuroMouseComparisonUrl = null;
+let latestNeuroMouseData = null;
 let latestComparisonManifest = null;
 
-function speedmouseOptions() {
-  const maxSamples = Number(($('speedmouseMaxSamples')?.value || '').trim()) || 240000;
-  const maxWindows = Number(($('speedmouseMaxWindows')?.value || '').trim()) || 600;
+function neuromouseOptions() {
+  const maxSamples = Number(($('neuromouseMaxSamples')?.value || '').trim()) || 240000;
+  const maxWindows = Number(($('neuromouseMaxWindows')?.value || '').trim()) || 600;
   return {
-    speedmouse_max_analysis_samples: maxSamples,
-    speedmouse_max_windows: maxWindows,
+    neuromouse_max_analysis_samples: maxSamples,
+    neuromouse_max_windows: maxWindows,
   };
 }
 
-async function analyzeUploadsInSpeedMouse() {
+async function analyzeUploadsInNeuroMouse() {
   if (!selectedFiles.length) { alert('Choose or drop at least one file first.'); return; }
   const form = new FormData();
-  selectedFiles.forEach(f => form.append('files', f));
-  const options = { ...collectOptions(), ...speedmouseOptions() };
+  appendSelectedFiles(form);
+  const options = { ...collectOptions(), ...neuromouseOptions() };
   form.append('options_json', JSON.stringify(options));
   if (options.output_dir) form.append('output_dir', options.output_dir);
-  setProgress(1, 'SpeedMouse analysis started', 'Uploading and converting files...');
+  setProgress(1, 'NeuroMouse analysis started', 'Uploading and converting files...');
   showTab('resultsTab');
-  const res = await fetch('/api/jobs/analyze-speedmouse-upload', { method: 'POST', body: form });
+  const res = await fetch('/api/jobs/analyze-neuromouse-upload', { method: 'POST', body: form });
   const data = await res.json();
   if (data.error) { alert(data.error); return; }
   connectJobEvents(data.job_id);
 }
 
-async function buildSpeedMouseFromConverted() {
-  const dirs = $('speedmouseConvertedDirs').value.split('\n').map(x => x.trim()).filter(Boolean);
+async function buildNeuroMouseFromConverted() {
+  const dirs = $('neuromouseConvertedDirs').value.split('\n').map(x => x.trim()).filter(Boolean);
   if (!dirs.length) { alert('Provide at least one converted recording folder.'); return; }
   const payload = {
     recording_dirs: dirs,
-    output_dir: $('speedmouseOutput').value.trim() || null,
-    options: { sampling_rate: $('samplingRate').value.trim() || null, ...speedmouseOptions() }
+    output_dir: $('neuromouseOutput').value.trim() || null,
+    options: { sampling_rate: $('samplingRate').value.trim() || null, ...neuromouseOptions() }
   };
-  const res = await fetch('/api/jobs/speedmouse-from-converted', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
+  const res = await fetch('/api/jobs/neuromouse-from-converted', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
   const data = await res.json();
   if (data.error) { alert(data.error); return; }
   connectJobEvents(data.job_id);
 }
 
-async function compareGroupsInSpeedMouse() {
+async function compareGroupsInNeuroMouse() {
   const groupA = $('groupA').value.split('\n').map(x => x.trim()).filter(Boolean);
   const groupB = $('groupB').value.split('\n').map(x => x.trim()).filter(Boolean);
   if (!groupA.length || !groupB.length) { alert('Provide at least one converted folder in Group A and Group B.'); return; }
@@ -383,26 +399,30 @@ async function compareGroupsInSpeedMouse() {
     group_a: groupA,
     group_b: groupB,
     output_dir: $('compareOutput').value.trim() || null,
-    options: { comparison_name: $('comparisonName').value.trim() || 'speedmouse_comparison', sampling_rate: $('samplingRate').value.trim() || null, ...speedmouseOptions() }
+    options: { comparison_name: $('comparisonName').value.trim() || 'neuromouse_comparison', sampling_rate: $('samplingRate').value.trim() || null, ...neuromouseOptions() }
   };
-  const res = await fetch('/api/jobs/compare-speedmouse', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
+  const res = await fetch('/api/jobs/compare-neuromouse', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
   const data = await res.json();
   if (data.error) { alert(data.error); return; }
   connectJobEvents(data.job_id);
 }
 
-function datasetFetchUrlFromSpeedMouseUrl(speedmouseUrl) {
-  if (!speedmouseUrl) return null;
+function datasetFetchUrlFromNeuroMouseUrl(neuromouseUrl) {
+  if (!neuromouseUrl) return null;
   try {
-    const u = new URL(speedmouseUrl, location.origin);
-    return u.searchParams.get('dataset') || u.searchParams.get('data_json');
+    const u = new URL(neuromouseUrl, location.origin);
+    const explicit = u.searchParams.get('dataset') || u.searchParams.get('data_json');
+    if (explicit) return explicit;
+    const m = u.pathname.match(/^\/neuromouse-job\/([^/]+)\/?$/);
+    if (m) return `/api/jobs/${m[1]}/neuromouse/data.json`;
+    return null;
   } catch { return null; }
 }
 
-function comparisonFetchUrlFromSpeedMouseUrl(speedmouseUrl) {
-  if (!speedmouseUrl) return null;
+function comparisonFetchUrlFromNeuroMouseUrl(neuromouseUrl) {
+  if (!neuromouseUrl) return null;
   try {
-    const u = new URL(speedmouseUrl, location.origin);
+    const u = new URL(neuromouseUrl, location.origin);
     return u.searchParams.get('comparison');
   } catch { return null; }
 }
@@ -463,15 +483,15 @@ function drawLineChart(canvas, xValues, yValues, title, yLabel) {
   ctx.stroke();
 }
 
-async function renderSpeedMouseDatasetPreview(speedmouseUrl) {
-  const fetchUrl = datasetFetchUrlFromSpeedMouseUrl(speedmouseUrl);
+async function renderNeuroMouseDatasetPreview(neuromouseUrl) {
+  const fetchUrl = datasetFetchUrlFromNeuroMouseUrl(neuromouseUrl);
   if (!fetchUrl) return;
   try {
     const data = await fetchJsonMaybe(fetchUrl);
-    latestSpeedMouseData = data;
+    latestNeuroMouseData = data;
     const nChannels = data?.meta?.channels?.length || data?.meta?.n_channels || 0;
     const nFrames = data?.geometry?.time?.length || data?.centroid?.time_relative?.length || 0;
-    const text = `Loaded SpeedMouse dataset: ${data?.meta?.dataset_id || 'dataset'} · ${nChannels} channels · ${nFrames} frames`;
+    const text = `Loaded NeuroMouse dataset: ${data?.meta?.dataset_id || 'dataset'} · ${nChannels} channels · ${nFrames} frames`;
     if ($('previewMeta')) $('previewMeta').textContent = text;
     if ($('resultsPreviewMeta')) $('resultsPreviewMeta').textContent = text;
     drawLineChart($('centroidPreview'), data?.geometry?.time || data?.centroid?.time_relative || [], meanRows(data?.centroid?.values || data?.geometry?.centroid || []), 'Mean spectral centroid over time', 'Hz');
@@ -482,8 +502,8 @@ async function renderSpeedMouseDatasetPreview(speedmouseUrl) {
   }
 }
 
-async function renderSpeedMouseComparisonPreview(speedmouseUrl) {
-  const fetchUrl = comparisonFetchUrlFromSpeedMouseUrl(speedmouseUrl);
+async function renderNeuroMouseComparisonPreview(neuromouseUrl) {
+  const fetchUrl = comparisonFetchUrlFromNeuroMouseUrl(neuromouseUrl);
   if (!fetchUrl) return;
   try {
     const manifest = await fetchJsonMaybe(fetchUrl);
@@ -491,35 +511,42 @@ async function renderSpeedMouseComparisonPreview(speedmouseUrl) {
     const rows = manifest.datasets || [];
     const container = $('comparisonPreview');
     if (!container) return;
-    let html = `<strong>${manifest.comparison_name || 'SpeedMouse comparison'}</strong><br><small>${manifest.compatibility_note || ''}</small>`;
+    let html = `<strong>${manifest.comparison_name || 'NeuroMouse comparison'}</strong><br><small>${manifest.compatibility_note || ''}</small>`;
     html += '<table><thead><tr><th>Group</th><th>Dataset</th><th>Channels</th><th>Open</th></tr></thead><tbody>';
     rows.forEach(row => {
-      const url = row.data_json_url ? `/speedmouse/?dataset=${encodeURIComponent(row.data_json_url)}` : '';
+      const url = row.data_json_url ? `/neuromouse/?dataset=${encodeURIComponent(row.data_json_url)}` : '';
       html += `<tr><td>${row.group || ''}</td><td>${row.dataset_id || ''}</td><td>variable</td><td>${url ? `<a href="${url}" target="_blank">open</a>` : ''}</td></tr>`;
     });
     html += '</tbody></table>';
     const report = manifest?.comparison_result?.report_html;
     if (report) html += `<p><a href="/api/file?path=${encodeURIComponent(report)}" target="_blank">Open backend comparison report</a></p>`;
     container.innerHTML = html;
-    if ($('resultsPreviewMeta')) $('resultsPreviewMeta').textContent = `Loaded comparison: ${rows.length} SpeedMouse datasets`;
+    if ($('resultsPreviewMeta')) $('resultsPreviewMeta').textContent = `Loaded comparison: ${rows.length} NeuroMouse datasets`;
   } catch (err) {
     if ($('comparisonPreview')) $('comparisonPreview').textContent = `Comparison preview failed: ${err.message}`;
   }
 }
 
-async function handleCompletedSpeedMouseResult(result) {
+async function handleCompletedNeuroMouseResult(result) {
   const r = result || {};
-  if (r.primary_speedmouse_url) {
-    latestSpeedMouseUrl = r.primary_speedmouse_url;
-    await renderSpeedMouseDatasetPreview(latestSpeedMouseUrl);
+  if (r.primary_neuromouse_dataset_url) {
+    try { localStorage.setItem('NEURO_SIGNAL_LAST_BACKEND_DATASET_URL', r.primary_neuromouse_dataset_url); } catch {}
+  } else if (currentJobId) {
+    try { localStorage.setItem('NEURO_SIGNAL_LAST_BACKEND_DATASET_URL', `/api/jobs/${currentJobId}/neuromouse/data.json`); } catch {}
   }
-  if (r.speedmouse_comparison_url) {
-    latestSpeedMouseComparisonUrl = r.speedmouse_comparison_url;
-    await renderSpeedMouseComparisonPreview(latestSpeedMouseComparisonUrl);
+  const primaryUrl = r.primary_neuromouse_url || (currentJobId ? `/neuromouse-job/${currentJobId}/?backend=1&force_backend=1&t=${Date.now()}` : null);
+  if (primaryUrl) {
+    latestNeuroMouseUrl = primaryUrl;
+    try { localStorage.setItem('NEURO_SIGNAL_LAST_NEUROMOUSE_URL', latestNeuroMouseUrl); } catch {}
+    await renderNeuroMouseDatasetPreview(latestNeuroMouseUrl);
+  }
+  if ((r.neuromouse_comparison_url || r.neuromouse_comparison_url)) {
+    latestNeuroMouseComparisonUrl = (r.neuromouse_comparison_url || r.neuromouse_comparison_url);
+    await renderNeuroMouseComparisonPreview(latestNeuroMouseComparisonUrl);
   }
 }
 
-// Final override: job stream + SpeedMouse auto-open + quick preview render.
+// Final override: job stream + NeuroMouse auto-open + quick preview render.
 connectJobEvents = function(jobId) {
   currentJobId = jobId;
   const proto = location.protocol === 'https:' ? 'wss' : 'ws';
@@ -538,9 +565,9 @@ connectJobEvents = function(jobId) {
       $('outputPath').textContent = currentOutputPath || '';
       $('resultJson').textContent = JSON.stringify(data.result || data, null, 2);
       const r = data.result || {};
-      await handleCompletedSpeedMouseResult(r);
-      if (r.primary_speedmouse_url) openBackendSpeedMouseUrl(r.primary_speedmouse_url);
-      if (r.speedmouse_comparison_url) openBackendSpeedMouseUrl(r.speedmouse_comparison_url);
+      await handleCompletedNeuroMouseResult(r);
+      if ((r.primary_neuromouse_url || r.primary_neuromouse_url)) openBackendNeuroMouseUrl((r.primary_neuromouse_url || r.primary_neuromouse_url));
+      if ((r.neuromouse_comparison_url || r.neuromouse_comparison_url)) openBackendNeuroMouseUrl((r.neuromouse_comparison_url || r.neuromouse_comparison_url));
       ws.close();
     }
     if (data.status === 'failed') {
@@ -554,10 +581,80 @@ connectJobEvents = function(jobId) {
   ws.onerror = () => log('WebSocket error');
 };
 
-function openLatestSpeedMouse() { if (latestSpeedMouseUrl) openUrl(latestSpeedMouseUrl); else openUrl('/speedmouse/'); }
-function openLatestSpeedMouseComparison() { if (latestSpeedMouseComparisonUrl) openUrl(latestSpeedMouseComparisonUrl); else alert('No SpeedMouse comparison has been generated yet.'); }
+async function fetchLatestNeuroMouseInfo() {
+  try {
+    const res = await fetch('/api/neuromouse/latest?t=' + Date.now(), { cache: 'no-store' });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
 
-if ($('openLatestSpeedMouseBtn')) $('openLatestSpeedMouseBtn').addEventListener('click', openLatestSpeedMouse);
-if ($('openLatestSpeedMouseComparisonBtn')) $('openLatestSpeedMouseComparisonBtn').addEventListener('click', openLatestSpeedMouseComparison);
-if ($('resultsOpenLatestSpeedMouseBtn')) $('resultsOpenLatestSpeedMouseBtn').addEventListener('click', openLatestSpeedMouse);
-if ($('resultsOpenLatestSpeedMouseComparisonBtn')) $('resultsOpenLatestSpeedMouseComparisonBtn').addEventListener('click', openLatestSpeedMouseComparison);
+async function openLatestNeuroMouse() {
+  // Always ask the backend first. A browser-stored /neuromouse-job/<old_id>/
+  // URL can become stale after restart or workspace cleanup and caused 404s.
+  const latest = await fetchLatestNeuroMouseInfo();
+  if (latest?.neuromouse_url) {
+    latestNeuroMouseUrl = latest.neuromouse_url;
+    try {
+      if (latest.dataset_url) localStorage.setItem('NEURO_SIGNAL_LAST_BACKEND_DATASET_URL', latest.dataset_url);
+      if (latest.job_dataset_url) localStorage.setItem('NEURO_SIGNAL_LAST_JOB_DATASET_URL', latest.job_dataset_url);
+      localStorage.setItem('NEURO_SIGNAL_LAST_NEUROMOUSE_URL', latest.neuromouse_url);
+    } catch {}
+    openUrl(latest.neuromouse_url);
+    return;
+  }
+  if (latestNeuroMouseUrl) { openUrl(latestNeuroMouseUrl); return; }
+  try {
+    const stored = localStorage.getItem('NEURO_SIGNAL_LAST_NEUROMOUSE_URL');
+    if (stored && (stored.includes('/neuromouse-latest/') || stored.includes('/neuromouse-job/'))) { openUrl(stored); return; }
+  } catch {}
+  alert('No generated NeuroMouse dataset found yet. Convert or Analyze a dataset first, then use this button.');
+}
+function openLatestNeuroMouseComparison() { if (latestNeuroMouseComparisonUrl) openUrl(latestNeuroMouseComparisonUrl); else alert('No NeuroMouse comparison has been generated yet.'); }
+
+if ($('openLatestNeuroMouseBtn')) $('openLatestNeuroMouseBtn').addEventListener('click', openLatestNeuroMouse);
+if ($('openLatestNeuroMouseComparisonBtn')) $('openLatestNeuroMouseComparisonBtn').addEventListener('click', openLatestNeuroMouseComparison);
+if ($('resultsOpenLatestNeuroMouseBtn')) $('resultsOpenLatestNeuroMouseBtn').addEventListener('click', openLatestNeuroMouse);
+if ($('resultsOpenLatestNeuroMouseComparisonBtn')) $('resultsOpenLatestNeuroMouseComparisonBtn').addEventListener('click', openLatestNeuroMouseComparison);
+
+// ---- v0.9.5 saved raw backend job log output ----
+let latestRawLogUrl = null;
+let latestRawJsonlUrl = null;
+let rawLogRefreshTimer = null;
+
+function setRawJobLogLinks(jobId) {
+  if (!jobId) return;
+  latestRawLogUrl = `/api/jobs/${jobId}/raw-log.txt`;
+  latestRawJsonlUrl = `/api/jobs/${jobId}/raw-log.jsonl`;
+  const viewBtn = $('viewRawLogBtn');
+  const dlBtn = $('downloadRawLogBtn');
+  const jsonlBtn = $('downloadRawJsonlBtn');
+  if (viewBtn) { viewBtn.href = latestRawLogUrl; viewBtn.classList.remove('disabled'); }
+  if (dlBtn) { dlBtn.href = latestRawLogUrl; dlBtn.classList.remove('disabled'); }
+  if (jsonlBtn) { jsonlBtn.href = latestRawJsonlUrl; jsonlBtn.classList.remove('disabled'); }
+  if ($('rawLogPath')) $('rawLogPath').textContent = `Raw job log: ${latestRawLogUrl} · JSONL: ${latestRawJsonlUrl}`;
+}
+
+async function refreshRawLogPreview(jobId) {
+  if (!jobId || !$('rawLogPreview')) return;
+  try {
+    const res = await fetch(`/api/jobs/${jobId}/raw-log.txt?t=${Date.now()}`);
+    if (!res.ok) return;
+    const text = await res.text();
+    const lines = text.split('\n');
+    $('rawLogPreview').textContent = lines.slice(Math.max(0, lines.length - 160)).join('\n');
+  } catch (err) {
+    $('rawLogPreview').textContent = `Raw job log preview failed: ${err.message}`;
+  }
+}
+
+const _connectJobEventsBeforeRawLogPatch = connectJobEvents;
+connectJobEvents = function(jobId) {
+  setRawJobLogLinks(jobId);
+  if (rawLogRefreshTimer) clearInterval(rawLogRefreshTimer);
+  refreshRawLogPreview(jobId);
+  rawLogRefreshTimer = setInterval(() => refreshRawLogPreview(jobId), 1200);
+  return _connectJobEventsBeforeRawLogPatch(jobId);
+};

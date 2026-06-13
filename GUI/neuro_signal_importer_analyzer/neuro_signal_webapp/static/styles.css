@@ -61,14 +61,26 @@ code { color: var(--yellow); }
 .comparison-preview th, .comparison-preview td { border-bottom: 1px solid #063333; padding: 6px; text-align: left; }
 .hint { color: var(--muted); font-size: 12px; line-height: 1.4; }
 
-.speedmouse-generated-link {
+.neuromouse-generated-link {
   margin-top: 12px;
   padding: 12px;
   border: 1px solid #00ffaa;
   border-radius: 8px;
   background: rgba(0, 255, 170, 0.08);
 }
-.speedmouse-generated-link a, a.action-link, a.primary-link {
+.neuromouse-generated-link a, a.action-link, a.primary-link {
   color: #00ffaa;
   font-weight: 700;
+}
+
+/* v0.9.5 raw backend job log controls */
+.button-like.disabled {
+  opacity: 0.45;
+  pointer-events: none;
+  border-color: #365050;
+  color: #7b9999;
+}
+#rawLogPreview {
+  white-space: pre-wrap;
+  max-height: 520px;
 }

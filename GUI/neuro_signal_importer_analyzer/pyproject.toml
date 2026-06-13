@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "neuro-signal-importer"
-version = "0.9.3"
-description = "Complete continuous neurophysiology signal system with HTML/FastAPI launcher, original SpeedMouse workbench integration, conversion, offline analysis, live replay, comparative analysis, variable-electrode support, and updated documentation."
+version = "0.11.0"
+description = "Complete continuous neural signal system with HTML/FastAPI launcher, custom NeuroMouse workbench integration, archive/MAT conversion, live replay, comparative analysis, advanced NeuroMouse visualizations, variable-electrode support, and no bundled vendor copy."
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
@@ -40,9 +40,9 @@ neuro-live-analyzer = "neuro_importer_live.eeg_analyzer_zmq_variable:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["neuro_importer*", "neuro_importer_live*", "neuro_importer_analysis*", "neuro_importer_speedmouse*", "neuro_signal_webapp*"]
+include = ["neuro_importer*", "neuro_importer_live*", "neuro_importer_analysis*", "neuro_importer_speedmouse*", "neuro_importer_neuromouse*", "neuro_signal_webapp*"]
 
 [tool.setuptools.package-data]
 neuro_importer = ["config/*.yaml", "config/vendor_profiles/*.yaml"]
 neuro_importer_live = ["channel_profiles/*.json", "*.html"]
-neuro_signal_webapp = ["static/*.html", "static/*.css", "static/*.js", "speedmouse/*.html", "speedmouse/*.css", "speedmouse/*.md", "speedmouse/data/*.json", "speedmouse/data/*.csv", "speedmouse/js/*.js", "speedmouse/js/sources/*.js", "speedmouse/js/views/*.js", "speedmouse/js/workers/*.js", "speedmouse/tests/*.mjs", "speedmouse/tools/*.py", "speedmouse/tools/*.mjs", "speedmouse/tools/*.md", "speedmouse/audit/*.md"]
+neuro_signal_webapp = ["static/*.html", "static/*.css", "static/*.js", "neuromouse/*.html", "neuromouse/*.css", "neuromouse/*.md", "neuromouse/data/*.json", "neuromouse/data/*.csv", "neuromouse/js/*.js", "neuromouse/js/sources/*.js", "neuromouse/js/views/*.js", "neuromouse/js/workers/*.js", "neuromouse/tests/*.mjs", "neuromouse/tools/*.py", "neuromouse/tools/*.mjs", "neuromouse/tools/*.md", "neuromouse/audit/*.md"]

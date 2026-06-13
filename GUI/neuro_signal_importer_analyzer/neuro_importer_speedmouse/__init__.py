@@ -1,6 +1,6 @@
-"""SpeedMouse integration layer for the Neuro Signal Importer.
+"""NeuroMouse integration layer for the Neuro Signal Importer.
 
-This package produces SpeedMouse-compatible static datasets, comparison packs,
+This package produces NeuroMouse-compatible static datasets, comparison packs,
 and live replay sample frames from the importer canonical output format.
 """
 

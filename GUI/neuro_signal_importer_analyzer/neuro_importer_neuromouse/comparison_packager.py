@@ -12,7 +12,7 @@ from neuro_importer_analysis import run_comparative_analysis
 from .static_dataset_builder import write_speedmouse_dataset
 
 
-def build_speedmouse_comparison_pack(
+def build_neuromouse_comparison_pack(
     group_a_dirs: list[str | Path],
     group_b_dirs: list[str | Path],
     *,
@@ -21,9 +21,9 @@ def build_speedmouse_comparison_pack(
     sampling_rate: float | None = None,
 ) -> dict[str, Any]:
     output_dir = Path(output_dir).expanduser().resolve()
-    speedmouse_dir = output_dir / "neuromouse"
-    group_a_out = speedmouse_dir / "group_A"
-    group_b_out = speedmouse_dir / "group_B"
+    neuromouse_dir = output_dir / "neuromouse"
+    group_a_out = neuromouse_dir / "group_A"
+    group_b_out = neuromouse_dir / "group_B"
     group_a_out.mkdir(parents=True, exist_ok=True)
     group_b_out.mkdir(parents=True, exist_ok=True)
 
@@ -56,7 +56,7 @@ def build_speedmouse_comparison_pack(
         "comparison_result": comparison_result,
         "compatibility_note": "Feature-level comparisons are safe across variable electrode counts. Same-channel views require matching channel names/layouts.",
     }
-    manifest_path = speedmouse_dir / "comparison_manifest.json"
+    manifest_path = neuromouse_dir / "comparison_manifest.json"
     manifest_path.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
 
     zip_path = output_dir / "neuromouse_sessions.zip"
@@ -72,8 +72,7 @@ def build_speedmouse_comparison_pack(
                 zf.write(p, f"comparison_metrics/{Path(p).name}")
 
     return {
-        "neuromouse_dir": str(speedmouse_dir),
-        "speedmouse_dir": str(speedmouse_dir),  # legacy key
+        "neuromouse_dir": str(neuromouse_dir),
         "comparison_manifest": str(manifest_path),
         "sessions_zip": str(zip_path),
         "datasets": datasets,

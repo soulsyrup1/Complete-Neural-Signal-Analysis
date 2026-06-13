@@ -31,7 +31,7 @@ class GenericMatAdapter(BaseAdapter):
     name = "generic_mat"
     signal_name_hints = ("eeg", "data", "signal", "signals", "raw", "voltage", "values", "x")
     fs_name_hints = ("fs", "srate", "sfreq", "sample_rate", "sampling_rate", "fsample", "rate")
-    label_name_hints = ("label", "labels", "chan", "ch_names", "channels", "electrodes", "names")
+    label_name_hints = ("label", "labels", "clab", "chan", "ch_names", "channels", "electrodes", "names")
     time_name_hints = ("time", "times", "t", "timestamp", "timestamps")
 
     def score(self, raw: Any) -> AdapterScore:

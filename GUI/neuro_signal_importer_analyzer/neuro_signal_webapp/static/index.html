@@ -3,21 +3,21 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Neuro Signal App v0.9.0 + SpeedMouse Workbench</title>
+  <title>Neuro Signal App v0.11.0 + NeuroMouse Workbench</title>
   <link rel="stylesheet" href="/static/styles.css" />
 </head>
 <body>
   <header>
     <div>
-      <h1>Neuro Signal App <span>v0.9.0 + SpeedMouse Workbench</span></h1>
-      <p>Drag/drop neural files, convert, analyze in SpeedMouse, run live replay, compare groups, and view quick HTML summaries.</p>
+      <h1>Neuro Signal App <span>v0.11.0 + NeuroMouse Workbench</span></h1>
+      <p>Drag/drop neural files, convert, analyze in NeuroMouse, run live replay, compare groups, and view quick HTML summaries.</p>
     </div>
     <div id="serverStatus">checking backend...</div>
   </header>
 
   <nav>
     <button class="tab active" data-tab="importTab">Import / Convert</button>
-    <button class="tab" data-tab="speedmouseTab">SpeedMouse</button>
+    <button class="tab" data-tab="neuromouseTab">NeuroMouse</button>
     <button class="tab" data-tab="previewTab">Quick Visualizations</button>
     <button class="tab" data-tab="liveTab">Live Replay</button>
     <button class="tab" data-tab="compareTab">Compare</button>
@@ -32,10 +32,13 @@
           <div id="dropZone" class="drop-zone">
             <strong>Drop neural signal files here</strong>
             <p>.mat, .h5, .hdf5, .nwb, .npy, .npz, .csv, .tsv, .xlsx, .edf, .bdf, .set, .vhdr</p>
+            <p class="hint">You can upload raw files/folders or .zip archives. For EEGLAB/BIDS, include sidecars such as .fdt, *_channels.tsv, *_electrodes.tsv, *_events.tsv, and *_eeg.json in the same upload/folder.</p>
             <input id="fileInput" type="file" multiple />
+            <input id="folderInput" type="file" multiple webkitdirectory directory hidden />
           </div>
           <div class="button-row">
             <button id="chooseFilesBtn">Choose Files</button>
+            <button id="chooseFolderBtn">Choose Folder</button>
             <button id="clearFilesBtn">Clear</button>
             <button id="inspectBtn">Inspect Uploads</button>
           </div>
@@ -91,54 +94,54 @@
             <label>Step seconds <input id="stepSeconds" type="number" step="any" value="1" /></label>
           </details>
           <details open>
-            <summary>SpeedMouse analysis options</summary>
-            <label>Max samples used for offline SpeedMouse analysis <input id="speedmouseMaxSamples" type="number" value="240000" min="1000" step="1000" /></label>
-            <label>Max sliding windows for SpeedMouse geometry <input id="speedmouseMaxWindows" type="number" value="600" min="10" step="10" /></label>
-            <p class="hint">Large files are analyzed offline by the Python backend, then opened in the original SpeedMouse workbench. The raw converted signal is still preserved.</p>
+            <summary>NeuroMouse analysis options</summary>
+            <label>Max samples used for offline NeuroMouse analysis <input id="neuromouseMaxSamples" type="number" value="240000" min="1000" step="1000" /></label>
+            <label>Max sliding windows for NeuroMouse geometry <input id="neuromouseMaxWindows" type="number" value="600" min="10" step="10" /></label>
+            <p class="hint">Large files are analyzed offline by the Python backend, then opened in the original NeuroMouse workbench. The raw converted signal is still preserved.</p>
           </details>
           <div class="button-row big">
             <button id="convertBtn" class="primary">Convert</button>
             <button id="fullAnalyzeBtn" class="accent">Full Pipeline: Convert + Analyze</button>
-            <button id="speedmouseAnalyzeBtn" class="accent">Analyze in SpeedMouse</button>
+            <button id="neuromouseAnalyzeBtn" class="accent">Analyze in NeuroMouse</button>
           </div>
         </div>
       </div>
     </section>
 
 
-    <section id="speedmouseTab" class="panel">
+    <section id="neuromouseTab" class="panel">
       <div class="grid two">
         <div class="card">
-          <h2>SpeedMouse Workbench</h2>
-          <p>Use the original SpeedMouse workbench as the interactive browser workbench. Our backend converts, computes large/offline features, writes SpeedMouse <code>data.json</code>, and opens SpeedMouse with variable electrode names/counts intact.</p>
+          <h2>NeuroMouse Workbench</h2>
+          <p>Use the original NeuroMouse workbench as the interactive browser workbench. Our backend converts, computes large/offline features, writes NeuroMouse <code>data.json</code>, and opens NeuroMouse with variable electrode names/counts intact.</p>
           <div class="button-row big">
-            <button id="openSpeedMouseBtn" class="primary">Open Empty SpeedMouse</button>
-            <button id="analyzeSpeedMouseBtn2" class="accent">Analyze Current Uploads in SpeedMouse</button>
+            <button id="openNeuroMouseBtn" class="primary">Open NeuroMouse Demo / Manual Loader</button>
+            <button id="analyzeNeuroMouseBtn2" class="accent">Analyze Current Uploads in NeuroMouse</button>
           </div>
-          <label>Converted recording folders to build SpeedMouse data.json <textarea id="speedmouseConvertedDirs" placeholder="One converted folder per line"></textarea></label>
-          <label>SpeedMouse output folder <input id="speedmouseOutput" placeholder="blank = app workspace output" /></label>
+          <label>Converted recording folders to build NeuroMouse data.json <textarea id="neuromouseConvertedDirs" placeholder="One converted folder per line"></textarea></label>
+          <label>NeuroMouse output folder <input id="neuromouseOutput" placeholder="blank = app workspace output" /></label>
           <div class="button-row">
-            <button id="speedmouseFromConvertedBtn" class="primary">Build SpeedMouse From Converted Folders</button>
+            <button id="neuromouseFromConvertedBtn" class="primary">Build NeuroMouse From Converted Folders</button>
           </div>
         </div>
         <div class="card">
-          <h2>SpeedMouse Live Replay</h2>
-          <p>This streams sample-major JSON frames into the SpeedMouse live panel. It uses the same variable-electrode metadata from <code>channels.csv</code>.</p>
-          <label>signal.npy path <input id="speedmouseLiveSignal" placeholder="/path/to/converted/signal.npy" /></label>
-          <label>channels.csv path <input id="speedmouseLiveChannels" placeholder="optional" /></label>
-          <label>metadata.json path <input id="speedmouseLiveMetadata" placeholder="optional" /></label>
-          <label>Sampling rate Hz <input id="speedmouseLiveFs" type="number" step="any" placeholder="auto / required if missing" /></label>
-          <label>Replay speed <input id="speedmouseLiveSpeed" type="number" step="any" value="1" /></label>
+          <h2>NeuroMouse Live Replay</h2>
+          <p>This streams sample-major JSON frames into the NeuroMouse live panel. It uses the same variable-electrode metadata from <code>channels.csv</code>.</p>
+          <label>signal.npy path <input id="neuromouseLiveSignal" placeholder="/path/to/converted/signal.npy" /></label>
+          <label>channels.csv path <input id="neuromouseLiveChannels" placeholder="optional" /></label>
+          <label>metadata.json path <input id="neuromouseLiveMetadata" placeholder="optional" /></label>
+          <label>Sampling rate Hz <input id="neuromouseLiveFs" type="number" step="any" placeholder="auto / required if missing" /></label>
+          <label>Replay speed <input id="neuromouseLiveSpeed" type="number" step="any" value="1" /></label>
           <div class="button-row">
-            <button id="openSpeedMouseLiveBtn" class="primary">Open SpeedMouse Live Replay</button>
+            <button id="openNeuroMouseLiveBtn" class="primary">Open NeuroMouse Live Replay</button>
           </div>
         </div>
       </div>
       <div class="card">
-        <h2>SpeedMouse Comparison</h2>
-        <p>Builds one SpeedMouse <code>data.json</code> per recording, a comparison manifest, and a session ZIP. Feature-level comparison is safe across different electrode counts.</p>
+        <h2>NeuroMouse Comparison</h2>
+        <p>Builds one NeuroMouse <code>data.json</code> per recording, a comparison manifest, and a session ZIP. Feature-level comparison is safe across different electrode counts.</p>
         <div class="button-row">
-          <button id="speedmouseCompareBtn" class="primary">Compare Groups in SpeedMouse</button>
+          <button id="neuromouseCompareBtn" class="primary">Compare Groups in NeuroMouse</button>
         </div>
       </div>
     </section>
@@ -149,18 +152,18 @@
       <div class="grid two">
         <div class="card">
           <h2>Quick Dataset Preview</h2>
-          <p>This is our lightweight HTML preview generated from the same SpeedMouse <code>data.json</code>. Use SpeedMouse for the full workbench controls.</p>
-          <div id="previewMeta" class="output-path">No SpeedMouse dataset loaded yet.</div>
+          <p>This is our lightweight HTML preview generated from the same NeuroMouse <code>data.json</code>. Use NeuroMouse for the full workbench controls.</p>
+          <div id="previewMeta" class="output-path">No NeuroMouse dataset loaded yet.</div>
           <canvas id="centroidPreview" class="preview-canvas" width="760" height="300"></canvas>
           <canvas id="psdPreview" class="preview-canvas" width="760" height="300"></canvas>
         </div>
         <div class="card">
           <h2>Comparison Preview</h2>
-          <p>When you run a SpeedMouse group comparison, this panel lists the generated sessions and opens the original SpeedMouse comparison workbench.</p>
+          <p>When you run a NeuroMouse group comparison, this panel lists the generated sessions and opens the original NeuroMouse comparison workbench.</p>
           <div id="comparisonPreview" class="comparison-preview">No comparison loaded yet.</div>
           <div class="button-row">
-            <button id="openLatestSpeedMouseBtn" class="primary">Open Latest SpeedMouse Dataset</button>
-            <button id="openLatestSpeedMouseComparisonBtn" class="accent">Open Latest SpeedMouse Comparison</button>
+            <button id="openLatestNeuroMouseBtn" class="primary">Open Latest NeuroMouse Dataset</button>
+            <button id="openLatestNeuroMouseComparisonBtn" class="accent">Open Latest NeuroMouse Comparison</button>
           </div>
         </div>
       </div>
@@ -211,7 +214,7 @@
         <label>Comparison name <input id="comparisonName" value="comparison" /></label>
         <div class="button-row">
           <button id="compareBtn" class="primary">Run Comparative Analysis</button>
-          <button id="speedmouseCompareBtn2" class="accent">Run + Open in SpeedMouse</button>
+          <button id="neuromouseCompareBtn2" class="accent">Run + Open in NeuroMouse</button>
         </div>
       </div>
     </section>
@@ -227,8 +230,12 @@
           <div class="button-row">
             <button id="openOutputBtn">Open Output Folder</button>
             <button id="copyOutputBtn">Copy Output Path</button>
+            <a id="viewRawLogBtn" class="button-like disabled" href="#" target="_blank" rel="noopener">View Raw Job Log</a>
+            <a id="downloadRawLogBtn" class="button-like disabled" href="#" download>Download Raw Log</a>
+            <a id="downloadRawJsonlBtn" class="button-like disabled" href="#" download>Download JSONL Log</a>
           </div>
           <div id="outputPath" class="output-path"></div>
+          <div id="rawLogPath" class="output-path">Raw job log: none yet.</div>
         </div>
         <div class="card">
           <h2>Latest Result</h2>
@@ -237,20 +244,26 @@
       </div>
       <div class="card">
         <h2>Quick Analysis Preview</h2>
-        <p>After <strong>Analyze in SpeedMouse</strong> or <strong>Compare Groups in SpeedMouse</strong>, this area updates automatically and SpeedMouse opens in a new tab.</p>
+        <p>After <strong>Analyze in NeuroMouse</strong>, this page automatically switches to a job-specific NeuroMouse URL such as <code>/neuromouse-job/&lt;job_id&gt;/</code>. That job URL is forced to load your generated backend data, not the bundled demo data.</p>
         <div id="resultsPreviewMeta" class="output-path">No analysis preview yet.</div>
         <div class="button-row">
-          <button id="resultsOpenLatestSpeedMouseBtn" class="primary">Open Latest SpeedMouse Dataset</button>
-          <button id="resultsOpenLatestSpeedMouseComparisonBtn" class="accent">Open Latest SpeedMouse Comparison</button>
+          <button id="resultsOpenLatestNeuroMouseBtn" class="primary">Open Latest NeuroMouse Dataset</button>
+          <button id="resultsOpenLatestNeuroMouseComparisonBtn" class="accent">Open Latest NeuroMouse Comparison</button>
         </div>
       </div>
       <details class="card">
-        <summary>Detailed log</summary>
+        <summary>Detailed browser event log</summary>
+        <p class="hint">This is the live browser event stream. Use <strong>View Raw Job Log</strong> for the saved backend/pipeline log in the output folder.</p>
         <pre id="logBox"></pre>
+      </details>
+      <details class="card">
+        <summary>Raw backend job log preview</summary>
+        <p class="hint">This saved raw job log records backend steps, selected adapters, detected shapes, output paths, generated NeuroMouse dataset links, warnings, and errors. It does not dump raw neural samples.</p>
+        <pre id="rawLogPreview">No raw backend job log loaded yet.</pre>
       </details>
     </section>
   </main>
 
-  <script src="/static/app.js"></script>
+  <script src="/static/app.js?v=0.11.0"></script>
 </body>
 </html>

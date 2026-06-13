@@ -1,9 +1,7 @@
 # Neuro Signal Importer + NeuroMouse Workbench
 
-**Version:** `0.9.3-readme-update`  
+**Version:** `0.10.2-zip-archive-mat-support`  
 **Purpose:** Convert, standardize, analyze, replay, and visualize continuous neural signal data from many file formats using a local Python backend and an HTML/NeuroMouse browser workbench.
-
-**NeuroMouse source:** https://github.com/UlaYuga/NeuroMouse
 
 This project is designed for **continuous neural signal data**: EEG, ECoG, iEEG, MEA, organoid recordings, FinalSpark-style data, Cortical Labs-style data, HDF5/NWB-style recordings, MATLAB structures, NumPy arrays, tabular exports, and related neurophysiology signal files.
 
@@ -19,6 +17,14 @@ samples × channels continuous signal
 
 ---
 
+### v0.10.2 ZIP archive + BCI Competition MAT support
+
+The uploader can now accept `.zip` archives containing primary neural files such as `.mat`, `.edf`, `.set`, `.vhdr`, `.h5`, `.nwb`, `.npy`, or `.csv`. Archives are safely extracted inside the upload workspace, primary files are discovered inside the archive, and each discovered recording is converted normally. This specifically supports BCI Competition-style archives such as `BCICIV_1_mat.zip`, which contain multiple MATLAB `.mat` recordings with `cnt` signal arrays and `nfo` metadata.
+
+### v0.10.1 NeuroMouse generated-data binding
+
+Normal conversion jobs now also try to build a NeuroMouse-compatible `data.json` from the converted `signal.npy`. The Results tab can open `/neuromouse-job/<job_id>/`, which is hard-bound to `/api/jobs/<job_id>/neuromouse/data.json`. This prevents the integrated workbench from silently loading `/neuromouse/data/data.json`, the bundled demo dataset, when the user expects uploaded/converted data.
+
 ## Current System Overview
 
 The system now has four major layers:
@@ -33,18 +39,18 @@ The system now has four major layers:
 3. Live replay backend
    converted signal.npy → prerecorded live stream + raw/spectral WebSocket views
 
-4. HTML frontend + NeuroMouse workbench
+4. HTML frontend + original NeuroMouse workbench
    drag/drop, convert, analyze, compare, live replay, interactive visualization
+
+5. Raw backend job logging
+   saved job_log.txt + job_log.jsonl for each conversion/analysis/replay job
 ```
-
-
-> **Compatibility note:** Some internal routes, command options, filenames, and package folders still use the lowercase `speedmouse` identifier for backward compatibility with the existing backend code. User-facing documentation and project links now refer to **NeuroMouse**.
 
 The two main browser pages are:
 
 ```text
 http://127.0.0.1:8787/             Neuro Signal launcher/frontend
-http://127.0.0.1:8787/speedmouse/  NeuroMouse workbench, integrated
+http://127.0.0.1:8787/neuromouse/  Original NeuroMouse workbench, integrated
 ```
 
 The launcher page is our control center. NeuroMouse is the interactive neural signal visualization and comparison workbench.
@@ -63,6 +69,7 @@ This project is currently focused on:
 - live replay from prerecorded recordings
 - feature-level dataset/group comparison
 - NeuroMouse-compatible visualization outputs
+- saved raw backend job logs for debugging and reproducibility
 
 This project intentionally does **not** currently focus on:
 
@@ -99,7 +106,7 @@ By default, it opens the launcher app. Depending on launch options, it can also 
 ```bash
 python3 run_neuro_signal_app.py                 # normal install-check + launch
 python3 run_neuro_signal_app.py --open app      # open only our launcher
-python3 run_neuro_signal_app.py --open speedmouse
+python3 run_neuro_signal_app.py --open neuromouse
 python3 run_neuro_signal_app.py --open both
 python3 run_neuro_signal_app.py --no-browser    # start server only
 python3 run_neuro_signal_app.py --force-install # intentionally reinstall
@@ -133,10 +140,16 @@ dev       pytest and development tools
 
 ## Supported Input Types
 
+Archive uploads
+  - .zip files containing primary neural files such as .mat, .edf, .set, .vhdr, .h5, .nwb, .npy, or .csv
+  - archives are safely extracted into the upload workspace and then converted file-by-file
+
+
 The importer can inspect/convert many neural signal sources, including:
 
 ```text
 MATLAB .mat
+  - .zip archives containing one or more MATLAB .mat datasets
   - DSamp-style files
   - EEGLAB-style structures
   - FieldTrip-style structures
@@ -161,6 +174,11 @@ Simple array/table formats
   - .tsv
   - .xlsx
 ```
+
+
+EEGLAB/BIDS sidecar note:
+
+For EEGLAB/BIDS recordings, upload the primary signal/header file together with its sidecars. For example, upload `.set` with its matching `.fdt`, and upload BIDS files such as `*_channels.tsv`, `*_electrodes.tsv`, `*_events.tsv`, and `*_eeg.json` in the same folder. The backend now keeps these sidecars available for the reader, but it skips converting sidecars as standalone recordings so they do not cause false job failures.
 
 For unknown MAT/HDF5 files, the system can generate a mapping template so the user can tell the importer which dataset is the signal, where channel names live, what the sampling rate is, and how units should be interpreted.
 
@@ -279,30 +297,29 @@ Compare
   Compare one dataset/group against another using feature-level summaries.
 
 Results
-  Open output folders, reports, generated data.json, and NeuroMouse links.
+  Open output folders, reports, generated data.json, NeuroMouse links, and raw job logs.
+
+Raw Job Logs
+  Every backend job now writes both a human-readable `job_log.txt` and a structured `job_log.jsonl`. These logs record pipeline events such as uploaded files, selected adapters, detected signal shapes, sampling-rate decisions, output paths, generated NeuroMouse dataset links, warnings, and errors. They do not dump raw neural samples.
 ```
 
 ---
 
-## NeuroMouse Integration
+## Original NeuroMouse Integration
 
-The project integrates the **NeuroMouse workbench**.
-
-NeuroMouse source: https://github.com/UlaYuga/NeuroMouse
-
-The local integration keeps reference and served copies inside the GUI package so the backend can generate compatible visualization datasets.
+The project includes the **original NeuroMouse workbench files** that were provided by the user.
 
 They are stored in two places:
 
 ```text
-neuro_signal_webapp/speedmouse/    served integrated copy
-vendor/speedmouse_original/        untouched reference copy
+neuro_signal_webapp/neuromouse/    served integrated copy
+
 ```
 
 NeuroMouse is served at:
 
 ```text
-http://127.0.0.1:8787/speedmouse/
+http://127.0.0.1:8787/neuromouse/
 ```
 
 The integrated NeuroMouse copy has minimal compatibility patches so it can:
@@ -338,10 +355,10 @@ load signal.npy + channels.csv + metadata.json
     ↓
 compute offline NeuroMouse features
     ↓
-write outputs/<job_id>/speedmouse/data.json
+write outputs/<job_id>/neuromouse/data.json
     ↓
 open NeuroMouse with:
-    /speedmouse/?dataset=/api/jobs/<job_id>/speedmouse/data.json&backend_job=<job_id>&backend=1
+    /neuromouse/?dataset=/api/jobs/<job_id>/neuromouse/data.json&backend_job=<job_id>&backend=1
 ```
 
 Important: NeuroMouse still plots a `data.json` file, because that is its native plotting format. The difference is that the `data.json` should now be **generated from your dragged/converted data**, not the bundled demo file.
@@ -351,16 +368,16 @@ Important: NeuroMouse still plots a `data.json` file, because that is its native
 A correct backend-generated NeuroMouse page should show a source like:
 
 ```text
-/api/jobs/<job_id>/speedmouse/data.json
+/api/jobs/<job_id>/neuromouse/data.json
 ```
 
 It should not show:
 
 ```text
-/speedmouse/data/data.json
+/neuromouse/data/data.json
 ```
 
-If the source is `/speedmouse/data/data.json`, you are looking at the bundled NeuroMouse demo dataset, not the generated backend dataset.
+If the source is `/neuromouse/data/data.json`, you are looking at the bundled NeuroMouse demo dataset, not the generated backend dataset.
 
 Use the **Open generated NeuroMouse dataset** link in the launcher Results tab after analysis completes.
 
@@ -371,9 +388,9 @@ Use the **Open generated NeuroMouse dataset** link in the launcher Results tab a
 The backend-generated NeuroMouse folder typically contains:
 
 ```text
-speedmouse/
+neuromouse/
 ├── data.json
-└── speedmouse_manifest.json
+└── neuromouse_manifest.json
 ```
 
 `data.json` includes NeuroMouse-compatible offline analysis arrays such as:
@@ -563,21 +580,24 @@ Important routes include:
 
 ```text
 GET  /                                  launcher frontend
-GET  /speedmouse/                       NeuroMouse workbench
+GET  /neuromouse/                       original NeuroMouse workbench
 GET  /api/health                        server health/version/workspace
 POST /api/jobs/convert-upload           convert uploaded files
 POST /api/jobs/convert-paths            convert path-based files/folders
 POST /api/jobs/inspect-upload           inspect uploaded files
-POST /api/jobs/analyze-speedmouse-upload
-POST /api/jobs/analyze-speedmouse-paths
-POST /api/jobs/speedmouse-from-converted
+POST /api/jobs/analyze-neuromouse-upload
+POST /api/jobs/analyze-neuromouse-paths
+POST /api/jobs/neuromouse-from-converted
 POST /api/jobs/compare
-POST /api/jobs/compare-speedmouse
+POST /api/jobs/compare-neuromouse
 GET  /api/jobs/<job_id>
-GET  /api/jobs/<job_id>/speedmouse/data.json
-GET  /api/jobs/<job_id>/speedmouse/manifest.json
+GET  /api/jobs/<job_id>/raw-log.txt
+GET  /api/jobs/<job_id>/raw-log.jsonl
+GET  /api/jobs/<job_id>/raw-log
+GET  /api/jobs/<job_id>/neuromouse/data.json
+GET  /api/jobs/<job_id>/neuromouse/manifest.json
 WS   /api/jobs/<job_id>/events          heartbeat progress events
-WS   /ws/speedmouse/live                NeuroMouse-compatible live sample stream
+WS   /ws/neuromouse/live                NeuroMouse-compatible live sample stream
 GET  /api/file?path=...                 serve generated output file
 GET  /api/open-output?path=...          ask OS to open output folder
 ```
@@ -594,16 +614,46 @@ By default, the app writes to a workspace like:
 ├── outputs/
 │   └── <job_id>/
 │       ├── converted/
-│       ├── speedmouse/
+│       ├── neuromouse/
 │       │   ├── data.json
-│       │   └── speedmouse_manifest.json
+│       │   └── neuromouse_manifest.json
 │       ├── comparison_manifest.json
+│       ├── job_log.txt              human-readable raw backend job log
+│       ├── job_log.jsonl            machine-readable structured event log
 │       ├── qc_report.html
 │       └── job/result files
 └── logs/
 ```
 
 The exact output folder is shown in the launcher Results tab after a job completes.
+
+---
+
+## Raw Backend Job Logs
+
+Each job writes two saved logs into its output folder:
+
+```text
+job_log.txt    human-readable backend/pipeline log
+job_log.jsonl  structured JSON-lines event log
+```
+
+These logs are intended for support, debugging, and reproducibility. They record the job id, job type, input paths, selected pipeline steps, progress events, adapter/conversion status, warnings, errors, output folders, and generated NeuroMouse dataset URLs. They are backend logs, not raw neural sample dumps.
+
+In the launcher Results tab, use:
+
+```text
+View Raw Job Log
+Download Raw Log
+Download JSONL Log
+```
+
+The same files are also available through local routes:
+
+```text
+/api/jobs/<job_id>/raw-log.txt
+/api/jobs/<job_id>/raw-log.jsonl
+```
 
 ---
 
@@ -634,23 +684,39 @@ These include information such as:
 
 ## Troubleshooting
 
-### NeuroMouse still shows the demo data
+### NeuroMouse / NeuroMouse still shows the demo data
 
-Check the NeuroMouse banner/source.
-
-Correct generated backend data source:
+The app now generates a NeuroMouse-compatible `data.json` after both **Convert** and **Analyze in NeuroMouse** jobs whenever possible. The generated page should open through a job-specific URL:
 
 ```text
-/api/jobs/<job_id>/speedmouse/data.json
+/neuromouse-job/<job_id>/
 ```
 
-Wrong demo data source:
+That job page is hard-bound to:
 
 ```text
-/speedmouse/data/data.json
+/api/jobs/<job_id>/neuromouse/data.json
 ```
 
-If you see the demo path, use the **Open generated NeuroMouse dataset** link in the launcher Results tab after **Analyze in NeuroMouse** completes.
+It should not silently fall back to the bundled demo file:
+
+```text
+/neuromouse/data/data.json
+```
+
+If you still see the demo source, first make sure the old server is stopped and the new package was installed from the real app folder:
+
+```bash
+pkill -f neuro_signal_webapp.app_server
+cd /home/a/projects/Complete-Neural-Signal-Analysis/GUI/neuro_signal_importer_analyzer
+python3 run_neuro_signal_app.py --force-install
+```
+
+Then rerun the job and open the **Open generated NeuroMouse dataset from this job** link in the Results tab. You can intentionally open the bundled demo with:
+
+```text
+/neuromouse/?demo=1
+```
 
 ### Browser did not open automatically
 
@@ -663,7 +729,7 @@ http://127.0.0.1:8787/
 or:
 
 ```text
-http://127.0.0.1:8787/speedmouse/
+http://127.0.0.1:8787/neuromouse/
 ```
 
 ### Port already in use
@@ -710,7 +776,7 @@ neuro_importer_live/
 neuro_importer_analysis/
   offline feature extraction and comparative analysis
 
-neuro_importer_speedmouse/
+neuro_importer_neuromouse/
   NeuroMouse-compatible data.json builder, comparison packager, live bridge
 
 neuro_signal_webapp/
@@ -719,11 +785,8 @@ neuro_signal_webapp/
 neuro_signal_webapp/static/
   our HTML launcher frontend
 
-neuro_signal_webapp/speedmouse/
-  integrated NeuroMouse workbench with compatibility patches
-
-vendor/speedmouse_original/
-  compatibility reference copy for the integrated NeuroMouse workbench
+neuro_signal_webapp/neuromouse/
+  custom integrated NeuroMouse workbench with backend-loading, variable-electrode, live replay, and advanced-plot compatibility patches
 
 run_neuro_signal_app.py
   install-check, server startup, browser launcher
@@ -788,9 +851,73 @@ raw neural files/folders
     → canonical conversion
     → variable-electrode metadata
     → offline NeuroMouse-compatible analysis
-    → integrated NeuroMouse visualization
+    → integrated original NeuroMouse visualization
     → optional live replay
     → optional group comparison
 ```
 
-The system is still under active development, but the architecture is now set up so our backend can feed the NeuroMouse workbench while preserving our own HTML launcher/frontend and variable-electrode neuro-signal pipeline.
+The system is still under active development, but the architecture is now set up so our backend can feed the original NeuroMouse workbench while preserving our own HTML launcher/frontend and variable-electrode neuro-signal pipeline.
+
+
+## v0.9.7 Sidecar Upload Fix
+
+This update makes browser multi-file uploads treat EEGLAB `.fdt`, BrainVision `.eeg`/`.vmrk`, and BIDS TSV/JSON files as sidecars only. They are copied into the upload folder so the primary `.set` or `.vhdr` file can read them, but they are not converted as standalone recordings. This fixes failures where `sub-001_task-Rest_eeg.fdt` was incorrectly sent to the converter by itself.
+
+
+## v0.9.8 Sidecar Filtering and Explicit Raw Logs
+
+This release makes sidecar handling stricter and the raw job logs more explicit.
+
+- `.fdt`, `.eeg`, `.vmrk`, BIDS JSON/TSV sidecars, and other non-primary files are copied for traceability but are not converted as standalone recordings.
+- If a `.fdt` sidecar is passed directly and a matching `.set` header exists beside it, the job manager promotes the `.set` file and logs that decision.
+- Conversion and NeuroMouse analysis logs now include app version, requested paths, primary files selected for conversion, skipped sidecars, and promoted sidecar-to-primary matches.
+- The launcher now refuses to silently reuse an older server running on the same port when its `/api/health` version does not match the launcher version.
+
+For EEGLAB/BIDS uploads, upload the `.set` and `.fdt` together, but the raw log should show only the `.set` under `primary_files`. The `.fdt` should appear under `skipped` or `promoted`, not under `Converting ...`.
+
+
+### v0.11.0 Advanced NeuroMouse Plot Generation
+
+Backend-generated NeuroMouse datasets now include the same major analysis objects used by the original NeuroMouse demo views: Welch PSD heatmaps, spectral geometry, polar alpha chronomap, Kuramoto phase animation, channel network / PLV synchrony, Higuchi fractal-dimension traces, area-normalized PSD, and a lightweight TDA persistence view. These objects are generated from the uploaded/converted `signal.npy`, not from the bundled demo `data.json`.
+
+
+## v0.11.0 visualization stability fix
+
+This release restores the core NeuroMouse plotting path and makes the browser workbench crash-resistant. Backend-generated NeuroMouse datasets still include the original plot families, but the browser now validates and normalizes generated data before drawing. If one optional advanced view cannot render, the PSD heatmap, centroid, geometry stack, channel grid, playback, and other working views remain available instead of the entire page failing.
+
+## v0.11.0 NeuroMouse frontend visualization restore
+
+This patch fixes a browser-side NeuroMouse data normalization bug introduced in the visualization-stability layer. The bug truncated frequency and time arrays to one value before rendering, which could make the NeuroMouse buttons appear inactive and leave the PSD, centroid, geometry, playback, and advanced visualization panels blank. v0.11.0 preserves the full generated `data.json` arrays, keeps the v0.11.0 advanced analysis outputs, and keeps per-view error isolation so one optional advanced view cannot break the whole workbench.
+
+
+## v0.11.0 NeuroMouse frontend rollback/stability fix
+
+This release restores the known-good NeuroMouse browser frontend path and removes the browser-side normalization layer that could stop buttons and plots from initializing. The backend can still generate richer NeuroMouse `data.json` files from converted recordings, but the browser now receives them through the stable loader/plotting code. The bundled demo `data/data.json` is restored to the original NeuroMouse reference dataset so generated backend datasets cannot look identical to an accidentally-overwritten demo file.
+
+The local FastAPI server now sends no-cache headers for launcher and NeuroMouse assets, and the HTML entry points use updated cache-busting query strings. After installing this version, restart the server and hard-refresh once if the browser was open during an older version.
+
+
+## v0.11.0 NeuroMouse blank-page/button recovery fix
+
+This patch changes the NeuroMouse browser startup so controls are bound before plotting modules initialize. Each visualization panel is now isolated: if PSD, centroid, geometry, channel grid, Kuramoto, network, TDA, or another optional view throws a browser-side error, the rest of the NeuroMouse workbench continues to load and that panel shows a visible error message instead of blanking the whole page. The patch also cache-busts the NeuroMouse JavaScript and CSS so stale broken frontend files are not reused after updating.
+
+## v0.11.0 NeuroMouse persisted-job data endpoint fix
+
+This patch fixes a NeuroMouse startup error where a generated dataset URL such as
+`/api/jobs/<job_id>/neuromouse/data.json` could return HTTP 404 after the local
+server restarted or after the in-memory job table was cleared. The API now
+recovers generated NeuroMouse `data.json` files from the saved workspace output
+folder, including `outputs/<job_id>/neuromouse/*/data.json` and legacy
+`speedmouse` folder names. This keeps browser history, Results-tab links, and
+job-specific NeuroMouse pages usable as long as the job output folder still
+exists on disk.
+
+
+## v0.11.0 NeuroMouse latest-dataset 404 recovery
+
+This patch fixes NeuroMouse startup errors where an older browser-stored job URL could request `/api/jobs/<old_job_id>/neuromouse/data.json` and return HTTP 404 even after a newer conversion produced valid NeuroMouse output. The launcher now asks the backend for the newest generated NeuroMouse dataset before trusting local browser storage, plain `/neuromouse/` prefers the newest backend dataset, `/neuromouse-latest/` hard-binds NeuroMouse to the newest generated output, and old job-specific data endpoints fall back to the newest generated dataset instead of blanking the NeuroMouse page when a stale job id is requested.
+
+
+## v0.11.0 update
+
+The app now carries only the custom integrated NeuroMouse workbench under `neuro_signal_webapp/neuromouse/`. The old `vendor/neuromouse_original/` reference copy was removed because the upstream NeuroMouse repository is expected to change regularly. The integrated copy remains local so the Neuro Signal backend can reliably load generated datasets, archive conversions, live replay streams, and variable-electrode advanced visualizations.

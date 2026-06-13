@@ -11,7 +11,7 @@ Default behavior:
   3. Installs only if something is missing or the editable install points elsewhere.
   4. Starts the local FastAPI/HTML app.
   5. Waits until the health endpoint responds.
-  6. Opens the app in the default browser. SpeedMouse opens automatically after analysis.
+  6. Opens the app in the default browser. NeuroMouse opens automatically after analysis.
 
 It does NOT reinstall on every run. Use --force-install only when you intentionally
 want to reinstall/refresh dependencies.
@@ -36,6 +36,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent
 PYPROJECT = PROJECT_ROOT / "pyproject.toml"
 INSTALL_MARKER = PROJECT_ROOT / ".neuro_signal_app_install.json"
 INSTALL_EXTRA = ".[all,frontend,live,dev]"
+APP_VERSION = "0.10.6"
 
 # Modules we expect after the normal full install. These cover conversion,
 # HTML frontend, live backend, HDF5/MAT/EDF/NWB support, and optional zarr export.
@@ -156,12 +157,18 @@ def run_install() -> None:
     print("Install complete. Future launches will skip reinstall unless something changes.\n")
 
 
-def health_ok(url: str) -> bool:
+def health_json(url: str) -> dict[str, Any] | None:
     try:
         with urllib.request.urlopen(url, timeout=1.0) as resp:
-            return 200 <= resp.status < 300
+            if not (200 <= resp.status < 300):
+                return None
+            return json.loads(resp.read().decode("utf-8"))
     except Exception:
-        return False
+        return None
+
+
+def health_ok(url: str) -> bool:
+    return health_json(url) is not None
 
 
 def wait_for_health(health_url: str, timeout_sec: float = 60.0) -> bool:
@@ -177,16 +184,16 @@ def urls_for_open_mode(base_url: str, open_mode: str) -> list[str]:
     """Return browser URLs for the requested launch target.
 
     app        -> our launcher/dashboard
-    speedmouse -> original SpeedMouse workbench
-    both       -> both tabs, app first then SpeedMouse
+    neuromouse -> original NeuroMouse workbench
+    both       -> both tabs, app first then NeuroMouse
     """
     app_url = base_url
-    speedmouse_url = f"{base_url}/speedmouse/"
+    neuromouse_url = f"{base_url}/neuromouse/"
     if open_mode == "app":
         return [app_url]
-    if open_mode == "speedmouse":
-        return [speedmouse_url]
-    return [app_url, speedmouse_url]
+    if open_mode == "neuromouse":
+        return [neuromouse_url]
+    return [app_url, neuromouse_url]
 
 
 def open_requested_pages(base_url: str, open_mode: str) -> None:
@@ -227,9 +234,9 @@ def main() -> int:
     parser.add_argument("--no-browser", action="store_true", help="Start server but do not open browser.")
     parser.add_argument(
         "--open",
-        choices=["app", "speedmouse", "both"],
+        choices=["app", "neuromouse", "both"],
         default="app",
-        help="Which browser page to open after the server starts. Default: app. SpeedMouse opens automatically after Analyze in SpeedMouse completes.",
+        help="Which browser page to open after the server starts. Default: app. NeuroMouse opens automatically after Analyze in NeuroMouse completes.",
     )
     parser.add_argument("--skip-install-check", action="store_true", help="Skip checks and try to run directly.")
     args = parser.parse_args()
@@ -253,8 +260,18 @@ def main() -> int:
     url = f"http://{args.host}:{args.port}"
     health_url = f"{url}/api/health"
 
-    if health_ok(health_url):
-        print(f"Neuro Signal App is already running at {url}")
+    existing_health = health_json(health_url)
+    if existing_health:
+        existing_version = str(existing_health.get("version", "unknown"))
+        if existing_version != APP_VERSION:
+            print(f"ERROR: A Neuro Signal server is already running at {url}, but it reports version {existing_version}; this launcher is version {APP_VERSION}.", file=sys.stderr)
+            print("Stop the old server first, or launch this version on another port, for example:", file=sys.stderr)
+            print("  pkill -f neuro_signal_webapp.app_server", file=sys.stderr)
+            print(f"  {sys.executable} run_neuro_signal_app.py --force-install", file=sys.stderr)
+            print("or:", file=sys.stderr)
+            print(f"  {sys.executable} run_neuro_signal_app.py --port 8790", file=sys.stderr)
+            return 3
+        print(f"Neuro Signal App v{existing_version} is already running at {url}")
         if not args.no_browser:
             open_requested_pages(url, args.open)
         return 0

@@ -31,7 +31,7 @@ from neuro_importer.export import CanonicalExporter, NeuralSignalExporter
 from neuro_importer.inspect import write_file_tree_report
 from neuro_importer.preprocess import apply_preprocessing
 from neuro_importer.qc import write_qc_report
-from neuro_importer.readers import EDFReader, HDF5Reader, MatReader, NumpyReader, TableReader
+from neuro_importer.readers import EDFReader, HDF5Reader, MatReader, MNEReader, NumpyReader, TableReader
 from neuro_importer.validate import validate_recording
 from neuro_importer.windows import TensorExporter
 
@@ -56,6 +56,7 @@ class NeuroImportPipeline:
         self.numpy_reader = NumpyReader()
         self.hdf5_reader = HDF5Reader()
         self.edf_reader = EDFReader()
+        self.mne_reader = MNEReader()
         base_adapters = adapters or [
             DSampMatAdapter(),
             EEGLABAdapter(),
@@ -86,6 +87,8 @@ class NeuroImportPipeline:
             return self.hdf5_reader.read(path)
         if file_type == "edf":
             return self.edf_reader.read(path)
+        if file_type == "mne":
+            return self.mne_reader.read(path)
         raise ValueError(f"No reader implemented yet for file type: {file_type} ({path.suffix})")
 
     def inspect(self, path: str | Path) -> dict[str, Any]:

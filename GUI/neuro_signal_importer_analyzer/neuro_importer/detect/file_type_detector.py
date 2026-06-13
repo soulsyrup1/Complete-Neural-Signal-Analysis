@@ -15,6 +15,8 @@ def detect_file_type(path: str | Path) -> str:
         return "mat"
     if suffix in {".edf", ".bdf"}:
         return "edf"
+    if suffix in {".set", ".vhdr", ".fif"} or p.name.lower().endswith(".fif.gz"):
+        return "mne"
     if suffix in {".h5", ".hdf5", ".nwb"}:
         return "hdf5"
     if suffix in {".csv", ".tsv"}:
