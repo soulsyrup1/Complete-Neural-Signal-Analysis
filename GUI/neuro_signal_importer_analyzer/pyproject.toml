@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "neuro-signal-importer"
-version = "0.11.15"
+version = "0.11.33"
 description = "Complete continuous neural signal system with HTML/FastAPI launcher, custom NeuroMouse workbench integration, archive/MAT conversion, live replay, comparative analysis, advanced NeuroMouse visualizations, variable-electrode support, and no bundled vendor copy."
 readme = "README.md"
 requires-python = ">=3.10"

@@ -9,7 +9,7 @@ from neuro_importer_analysis import list_advanced_methods, run_advanced_method
 
 def test_v01115_minimal_dashboard_has_expected_primary_actions():
     html = Path('neuro_signal_webapp/static/index.html').read_text(encoding='utf-8')
-    assert 'v0.11.15 — Minimal Dashboard' in html
+    assert 'v0.11.32 — Minimal Dashboard' in html
     assert 'homeTab' in html
     assert 'Import dataset / datasets' in html
     assert 'Compare datasets' in html

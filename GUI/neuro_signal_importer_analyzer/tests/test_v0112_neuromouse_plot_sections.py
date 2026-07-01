@@ -22,7 +22,7 @@ def test_launcher_prioritizes_simple_dashboard_with_analysis_cards():
 
 
 def test_versions_are_consistent_for_v01115_launcher():
-    assert 'version = "0.11.15"' in Path("pyproject.toml").read_text(encoding="utf-8")
-    assert 'APP_VERSION = "0.11.15"' in Path("neuro_signal_webapp/job_manager.py").read_text(encoding="utf-8")
-    assert 'APP_VERSION = "0.11.15"' in Path("run_neuro_signal_app.py").read_text(encoding="utf-8")
-    assert 'v0.11.15 — Minimal Dashboard' in Path("neuro_signal_webapp/static/index.html").read_text(encoding="utf-8")
+    assert 'version = "0.11.32"' in Path("pyproject.toml").read_text(encoding="utf-8")
+    assert 'APP_VERSION = "0.11.32"' in Path("neuro_signal_webapp/job_manager.py").read_text(encoding="utf-8")
+    assert 'APP_VERSION = "0.11.32"' in Path("run_neuro_signal_app.py").read_text(encoding="utf-8")
+    assert 'v0.11.32 — Minimal Dashboard' in Path("neuro_signal_webapp/static/index.html").read_text(encoding="utf-8")

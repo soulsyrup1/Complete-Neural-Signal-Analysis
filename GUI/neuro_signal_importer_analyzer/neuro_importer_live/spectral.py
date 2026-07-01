@@ -6,6 +6,13 @@ from typing import Any
 import numpy as np
 
 
+def _trapezoid_area(y: np.ndarray, x: np.ndarray, axis: int = -1) -> np.ndarray:
+    integrate = getattr(np, "trapezoid", None)
+    if integrate is None:
+        integrate = getattr(np, "trapz")
+    return integrate(y, x, axis=axis)
+
+
 def welch_psd_numpy(x: np.ndarray, fs_hz: float, nperseg: int = 500, overlap: float = 0.5) -> tuple[np.ndarray, np.ndarray]:
     """Return frequency vector and PSD matrix with shape (freqs, channels)."""
     x = np.asarray(x, dtype=np.float32)
@@ -39,7 +46,7 @@ def _band_power(freqs: np.ndarray, psd: np.ndarray, lo: float, hi: float) -> np.
     mask = (freqs >= lo) & (freqs <= hi)
     if not np.any(mask):
         return np.zeros(psd.shape[1], dtype=np.float32)
-    return np.trapz(psd[mask, :], freqs[mask], axis=0).astype(np.float32)
+    return _trapezoid_area(psd[mask, :], freqs[mask], axis=0).astype(np.float32)
 
 
 def compute_channel_metrics(

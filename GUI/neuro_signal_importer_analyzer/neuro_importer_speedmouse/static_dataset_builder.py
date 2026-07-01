@@ -468,9 +468,16 @@ def _build_polar_chronomap(geometry: dict[str, Any], channels: list[str]) -> dic
     }
 
 
+def _trapezoid_area(y: np.ndarray, x: np.ndarray, axis: int = -1) -> np.ndarray:
+    integrate = getattr(np, "trapezoid", None)
+    if integrate is None:
+        integrate = getattr(np, "trapz")
+    return integrate(y, x, axis=axis)
+
+
 def _add_area_normalized_psd(geometry: dict[str, Any], freqs: np.ndarray, psd_ch_major: np.ndarray) -> None:
     p = np.asarray(psd_ch_major, dtype=float)
-    denom = np.trapz(np.maximum(p, 0.0), freqs, axis=1)
+    denom = _trapezoid_area(np.maximum(p, 0.0), freqs, axis=1)
     denom[~np.isfinite(denom) | (denom <= 1e-20)] = 1.0
     normalized = p / denom[:, None]
     geometry["area_normalized_psd"] = {

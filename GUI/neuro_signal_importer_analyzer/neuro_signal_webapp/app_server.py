@@ -67,6 +67,72 @@ def embedded_fd_page() -> RedirectResponse:
     return RedirectResponse(url="/#embeddedFdDirectCard", status_code=307)
 
 
+@app.get("/dimension-saturation-profiling")
+@app.get("/saturation-profiling")
+def saturation_profiling_page() -> RedirectResponse:
+    return RedirectResponse(url="/#saturationDirectCard", status_code=307)
+
+
+@app.get("/wavelet-hurst")
+@app.get("/manual-wavelet-hurst")
+def wavelet_hurst_page() -> RedirectResponse:
+    return RedirectResponse(url="/#waveletDirectCard", status_code=307)
+
+
+@app.get("/manual-expert-mfdfa")
+@app.get("/mfdfa")
+def mfdfa_page() -> RedirectResponse:
+    return RedirectResponse(url="/#mfdfaDirectCard", status_code=307)
+
+
+@app.get("/manual-mfdfa-spectrum")
+@app.get("/mfdfa-spectrum")
+def mfdfa_spectrum_page() -> RedirectResponse:
+    return RedirectResponse(url="/#mfdfaSpectrumDirectCard", status_code=307)
+
+
+@app.get("/manual-mfdfa-shuffle-surrogate")
+@app.get("/mfdfa-shuffle")
+def mfdfa_shuffle_page() -> RedirectResponse:
+    return RedirectResponse(url="/#mfdfaShuffleDirectCard", status_code=307)
+
+
+@app.get("/manual-mfdfa-iaaft-surrogate")
+@app.get("/mfdfa-iaaft")
+def mfdfa_iaaft_page() -> RedirectResponse:
+    return RedirectResponse(url="/#mfdfaIaaftDirectCard", status_code=307)
+
+
+@app.get("/wavelet-leader-multifractal")
+@app.get("/wavelet-leader")
+def wavelet_leader_page() -> RedirectResponse:
+    return RedirectResponse(url="/#waveletLeaderDirectCard", status_code=307)
+
+
+@app.get("/arnold-kuramoto")
+@app.get("/arnold-tongues-kuramoto")
+def arnold_kuramoto_page() -> RedirectResponse:
+    return RedirectResponse(url="/#arnoldKuramotoDirectCard", status_code=307)
+
+
+@app.get("/circle-map-arnold-tongues")
+@app.get("/circle-map")
+def circle_map_arnold_page() -> RedirectResponse:
+    return RedirectResponse(url="/#circleMapArnoldDirectCard", status_code=307)
+
+
+@app.get("/circle-map-converged-density")
+@app.get("/circle-density")
+def circle_map_density_page() -> RedirectResponse:
+    return RedirectResponse(url="/#circleMapDensityDirectCard", status_code=307)
+
+
+@app.get("/mfdfa-plot-viewer")
+@app.get("/mfdfa-viewer")
+def mfdfa_viewer_page() -> RedirectResponse:
+    return RedirectResponse(url="/#mfdfaViewerDirectCard", status_code=307)
+
+
 @app.get("/api/neuromouse/advanced-plots")
 def advanced_plot_summary() -> JSONResponse:
     from neuro_importer_neuromouse.advanced_plot_renderer import load_best_dataset, plot_summary_payload

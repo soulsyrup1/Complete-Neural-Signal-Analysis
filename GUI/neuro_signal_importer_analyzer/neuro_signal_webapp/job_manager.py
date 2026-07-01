@@ -22,7 +22,7 @@ from neuro_importer_analysis import run_comparative_analysis
 from neuro_importer_neuromouse import write_speedmouse_dataset, build_speedmouse_comparison_pack
 
 
-APP_VERSION = "0.11.15"
+APP_VERSION = "0.11.33"
 
 SUPPORTED_UPLOAD_SUFFIXES = {
     # Archive uploads; extracted safely before primary-file discovery
@@ -373,25 +373,89 @@ class JobManager:
             # Raw logging is diagnostic only. Never let it break conversion/analysis.
             pass
 
+    def _coerce_progress_percent(self, data: dict[str, Any]) -> int | None:
+        """Return a safe 0-100 integer progress value for job events.
+
+        Some backend progress events provide an explicit percent, while others
+        only provide step_index/total_steps or item_index/total_items.  This
+        normalizer keeps the browser progress bar honest: running events stay
+        within 0-99, terminal events are exactly 100, and bad values cannot
+        raise or push the bar outside its bounds.
+        """
+        status = str(data.get("status") or "").lower()
+        if status in {"complete", "completed", "success", "finished", "failed", "stopped"}:
+            return 100
+
+        percent = data.get("percent")
+        if percent is None:
+            for idx_key, total_key in (("step_index", "total_steps"), ("item_index", "total_items")):
+                idx = data.get(idx_key)
+                total = data.get(total_key)
+                try:
+                    idx_f = float(idx)
+                    total_f = float(total)
+                except (TypeError, ValueError):
+                    continue
+                if total_f > 0:
+                    # step_index/item_index may be zero- or one-based. Treat 0 as
+                    # the start of work and total as the last completed unit.
+                    idx_f = max(0.0, min(idx_f, total_f))
+                    percent = 100.0 * idx_f / total_f
+                    break
+
+        if percent is None:
+            return None
+
+        try:
+            value = int(round(float(percent)))
+        except (TypeError, ValueError, OverflowError):
+            return None
+
+        value = max(0, min(100, value))
+        if status in {"running", "queued"}:
+            value = min(value, 99)
+        return value
+
     def emit(self, job_id: str, event_type: str, data: dict[str, Any]) -> None:
-        payload = {"type": event_type, "job_id": job_id, "time": time.time(), **data}
+        safe_data = dict(data)
+        normalized_percent = self._coerce_progress_percent(safe_data)
+        if normalized_percent is not None:
+            safe_data["percent"] = normalized_percent
+        payload = {"type": event_type, "job_id": job_id, "time": time.time(), **safe_data}
         with self.lock:
             record = self.jobs.get(job_id)
             if record:
                 record.events.append(payload)
                 record.updated_at = time.time()
-                if "status" in data:
-                    record.status = str(data["status"])
-                if "percent" in data and data["percent"] is not None:
-                    record.progress_percent = int(data["percent"])
-                if "step" in data and data["step"]:
-                    record.current_step = str(data["step"])
-                if "output_dir" in data and data["output_dir"]:
-                    record.output_dir = str(data["output_dir"])
-                if "result" in data:
-                    record.result = data["result"]
-                if "error" in data:
-                    record.error = str(data["error"])
+
+                # Only state events are allowed to change the job's lifecycle.
+                # Progress callbacks can report per-step `status=complete` and
+                # `percent=100`; treating those as job completion made the
+                # browser loader close early or jump backward during multi-file
+                # conversions.  Raw-log warnings likewise must not become the
+                # overall job status.
+                if event_type == "state" and "status" in safe_data:
+                    record.status = str(safe_data["status"])
+                elif (
+                    event_type == "progress"
+                    and record.status == "queued"
+                    and str(safe_data.get("status") or "").lower() == "running"
+                ):
+                    record.status = "running"
+
+                if "percent" in safe_data and safe_data["percent"] is not None:
+                    incoming_percent = int(safe_data["percent"])
+                    if event_type == "state" or incoming_percent >= record.progress_percent:
+                        record.progress_percent = incoming_percent
+
+                if "step" in safe_data and safe_data["step"]:
+                    record.current_step = str(safe_data["step"])
+                if "output_dir" in safe_data and safe_data["output_dir"]:
+                    record.output_dir = str(safe_data["output_dir"])
+                if "result" in safe_data:
+                    record.result = safe_data["result"]
+                if event_type == "state" and "error" in safe_data:
+                    record.error = str(safe_data["error"])
                 self._append_raw_log(record, payload)
             for q in self.event_queues.get(job_id, []):
                 q.put(payload)
@@ -400,14 +464,62 @@ class JobManager:
         with self.lock:
             return self.jobs.get(job_id)
 
-    def _progress_callback(self, job_id: str) -> Callable[[ProgressEvent], None]:
+    @staticmethod
+    def _conversion_step_percent(step: str, status: str, raw_percent: Any) -> int:
+        """Return a per-file conversion percent that never uses sub-step 100s as job 100.
+
+        The converter emits events such as `Read source file: running 10` and
+        then `Read source file: complete 100`.  That 100 means the *sub-step* is
+        done, not the whole conversion job.  Map sub-step completion to the next
+        stable conversion milestone so the global loader can remain monotonic.
+        """
+        text = str(step or "").lower()
+        status_text = str(status or "").lower()
+        is_step_complete = status_text in {"complete", "completed", "success", "finished"}
+
+        complete_milestones = [
+            ("prepare configuration", 8),
+            ("read source file", 20),
+            ("select adapter", 30),
+            ("extract neural signal", 48),
+            ("validate and calibrate", 65),
+            ("preprocess signal", 70),
+            ("export canonical files", 82),
+            ("write qc", 95),
+            ("complete", 100),
+        ]
+        if is_step_complete:
+            for key, value in complete_milestones:
+                if key in text:
+                    return value
+
+        try:
+            value = int(round(float(raw_percent)))
+        except (TypeError, ValueError, OverflowError):
+            value = 0
+        return max(0, min(100, value))
+
+    @staticmethod
+    def _map_percent_to_range(percent: int | float | None, start: int, end: int) -> int:
+        if percent is None:
+            percent = 0
+        try:
+            local = max(0.0, min(100.0, float(percent)))
+        except (TypeError, ValueError, OverflowError):
+            local = 0.0
+        if end <= start:
+            return int(max(0, min(99, start)))
+        mapped = start + (end - start) * (local / 100.0)
+        return int(max(0, min(99, round(mapped))))
+
+    def _progress_callback(self, job_id: str, *, percent_start: int = 0, percent_end: int = 99) -> Callable[[ProgressEvent], None]:
         def callback(event: ProgressEvent) -> None:
             """Normalize backend progress events for the HTML job stream.
 
-            v0.5.5/v0.7 ProgressEvent uses `stage`; an earlier webapp
-            bridge accidentally referenced `step_name`.  This callback is now
-            deliberately defensive so progress reporting can never fail the
-            actual conversion job.
+            Converter progress is local to one input file.  The web progress bar
+            is global to the whole job, so local per-step percentages are mapped
+            into an overall file slice and sub-step `complete 100` events are not
+            allowed to mark the job as finished.
             """
             try:
                 if hasattr(event, "to_dict"):
@@ -435,28 +547,33 @@ class JobManager:
                     or data.get("message")
                     or "Pipeline progress"
                 )
-                percent = data.get("percent")
-                if percent is None:
-                    percent = 0
+                local_percent = self._conversion_step_percent(step, data.get("status", "running"), data.get("percent"))
+                global_percent = self._map_percent_to_range(local_percent, percent_start, percent_end)
 
-                self.emit(job_id, "progress", {
-                    "status": data.get("status", "running"),
+                progress_payload = {
+                    "status": "running",
+                    "step_status": data.get("status", "running"),
                     "step": step,
                     "stage": data.get("stage", step),
                     "step_index": data.get("step_index"),
                     "total_steps": data.get("total_steps"),
-                    "percent": int(percent),
+                    "percent": global_percent,
+                    "local_percent": local_percent,
                     "message": data.get("message") or str(step),
                     "detail": data.get("detail"),
                     "item_index": data.get("item_index"),
                     "total_items": data.get("total_items"),
-                })
+                    "percent_range_start": percent_start,
+                    "percent_range_end": percent_end,
+                }
+
+                self.emit(job_id, "progress", progress_payload)
             except Exception as exc:
                 # Do not let a progress/UI reporting bug kill data conversion.
                 self.emit(job_id, "progress", {
                     "status": "running",
                     "step": "Progress update skipped",
-                    "percent": 0,
+                    "percent": percent_start,
                     "message": f"A non-fatal progress update error was ignored: {exc!r}",
                 })
         return callback
@@ -593,8 +710,18 @@ class JobManager:
         thread.start()
         return record
 
-    def _convert_one(self, pipeline: NeuroImportPipeline, job_id: str, input_path: Path, out_dir: Path, options: dict[str, Any]) -> dict[str, Any]:
-        self.emit(job_id, "progress", {"status": "running", "step": f"Converting {input_path.name}", "percent": 5, "message": f"Converting {input_path.name}"})
+    def _convert_one(
+        self,
+        pipeline: NeuroImportPipeline,
+        job_id: str,
+        input_path: Path,
+        out_dir: Path,
+        options: dict[str, Any],
+        *,
+        percent_start: int = 3,
+        percent_end: int = 85,
+    ) -> dict[str, Any]:
+        self.emit(job_id, "progress", {"status": "running", "step": f"Converting {input_path.name}", "percent": percent_start, "message": f"Converting {input_path.name}"})
         preprocess_cfg = None
         if options.get("preprocess"):
             preprocess_cfg = {
@@ -636,7 +763,7 @@ class JobManager:
             export_config=export_cfg,
             unit_config=unit_cfg or None,
             mapping_path=options.get("mapping_path") or None,
-            progress_callback=self._progress_callback(job_id),
+            progress_callback=self._progress_callback(job_id, percent_start=percent_start, percent_end=percent_end),
             **adapter_kwargs,
         )
         return {
@@ -677,7 +804,18 @@ class JobManager:
             for file_index, file_path in enumerate(primary_files):
                 safe_name = file_path.stem.replace(" ", "_")[:80]
                 out_dir = out_root / f"{file_index+1:03d}_{safe_name}"
-                conv = self._convert_one(pipeline, job_id, file_path, out_dir, options)
+                total_files = max(1, len(primary_files))
+                conv_start = 3 + int(round((file_index / total_files) * 82))
+                conv_end = 3 + int(round(((file_index + 1) / total_files) * 82))
+                conv = self._convert_one(
+                    pipeline,
+                    job_id,
+                    file_path,
+                    out_dir,
+                    options,
+                    percent_start=conv_start,
+                    percent_end=conv_end,
+                )
                 results.append(conv)
                 try:
                     sm_dir = speedmouse_root / f"{file_index+1:03d}_{safe_name}"

@@ -4,7 +4,7 @@ from pathlib import Path
 def test_v01115_minimal_home_and_tabs():
     html = Path("neuro_signal_webapp/static/index.html").read_text(encoding="utf-8")
     js = Path("neuro_signal_webapp/static/app.js").read_text(encoding="utf-8")
-    assert "v0.11.15 — Minimal Dashboard" in html
+    assert "v0.11.32 — Minimal Dashboard" in html
     assert "Import dataset / datasets" in html
     assert "Compare datasets" in html
     assert "Run Higuchi FD" in html

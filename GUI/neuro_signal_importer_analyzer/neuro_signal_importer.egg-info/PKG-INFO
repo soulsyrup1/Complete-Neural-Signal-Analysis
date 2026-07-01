@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: neuro-signal-importer
-Version: 0.11.15
+Version: 0.11.33
 Summary: Complete continuous neural signal system with HTML/FastAPI launcher, custom NeuroMouse workbench integration, archive/MAT conversion, live replay, comparative analysis, advanced NeuroMouse visualizations, variable-electrode support, and no bundled vendor copy.
 Requires-Python: >=3.10
 Description-Content-Type: text/markdown
@@ -48,986 +48,379 @@ Requires-Dist: python-multipart>=0.0.9; extra == "all"
 Provides-Extra: dev
 Requires-Dist: pytest>=7.0; extra == "dev"
 
-# Neuro Signal Importer + NeuroMouse Workbench
+# Neuro Signal Importer Analyzer
 
-**Version:** `0.11.14`  
-**Purpose:** Convert, standardize, analyze, replay, and visualize continuous neural signal data from many file formats using a local Python backend and an HTML/NeuroMouse browser workbench.
+## v0.11.33 — Circle Map Converged Density
 
-This project is designed for **continuous neural signal data**: EEG, ECoG, iEEG, MEA, organoid recordings, FinalSpark-style data, Cortical Labs-style data, HDF5/NWB-style recordings, MATLAB structures, NumPy arrays, tabular exports, and related neurophysiology signal files.
+Version 0.11.33 adds a native **Circle Map Converged Density** workflow adapted from the EEG Hilbert-phase final-state-density script. It uses bandpassed per-channel Hilbert phase as initial circle-map conditions, iterates final-state probability distributions across K at fixed Ω, and saves the full black/cyan plotting set: aggregate final-state density heatmap, circular mean vs K, normalized concentration vs K, resultant length vs K, channel concentration/resultant summaries, initial phase distribution by channel, and selected final-state distributions. Speed modes default to `ultra`; `full` matches the notebook-style 300 K values, 50 iterations, 50 histogram bins, and up to 5000 phase samples per channel.
 
-It deliberately does **not** center the pipeline on spike tables, stimulation events, or fixed EEG-only assumptions. The main data model is:
+
+**Version:** `0.11.33`  
+
+
+## v0.11.32 — NeuroMouse opening behavior fix
+
+Version 0.11.32 keeps the Neuro Signal app page open after conversion or NeuroMouse analysis jobs finish. Generated NeuroMouse URLs are now shown as explicit links/buttons, and users choose when to open the NeuroMouse workbench in a separate tab instead of the app automatically navigating the current window.
+
+## v0.11.32 — Multi-file progress-bar and NeuroMouse export fix
+
+Version 0.11.32 fixes the web launcher loading/progress bar for multi-file conversion jobs. Converter callbacks can emit nested step events such as `Read source file complete percent=100` followed by the next file starting at `10%`; the app now maps those local step percentages into a monotonic job-level range and only treats overall `state` events as job completion. The progress bar is clamped to 0–100%, cannot move backward during a running job, and shows `Full (100%)` only when the whole job finishes. This release also replaces NumPy `trapz` calls with a `trapezoid`-compatible helper so NeuroMouse `data.json` generation works in NumPy builds where `np.trapz` is unavailable.
+
+## v0.11.32 — Circle Map Arnold Tongues
+
+Version 0.11.32 adds a native **Circle Map Arnold Tongues** workflow adapted from the fixed-point-locking circle-map script. It extracts instantaneous phase with the Hilbert transform across all available channels, computes an EEG-derived circular mean phase, and evaluates fixed-point locking probability over a configurable Ω/K grid. Speed modes default to `ultra`; `full` matches the notebook-style 150×150 grid, 60 iterations, and up to 5000 phase samples.
+
+The backend saves `circle_map_fixed_point_locking_results.npz`, `circle_map_fixed_point_locking_grid.csv`, `eeg_derived_mean_phase_samples.csv`, and `circle_map_fixed_point_locking_summary.txt`, and renders the notebook-style black/cyan plots: fixed-point-locking heatmap, theoretical fixed-point boundary overlay, mean locking across K, mean locking across Ω, EEG-derived phase histogram, phase-sample trace, and thresholded locking map.
+
+**Default UI:** minimal dashboard for importing datasets, comparing datasets, and running fractal-dimension analyses.
+
+Neuro Signal Importer Analyzer converts continuous neural recordings into a canonical local format and provides a browser GUI for analysis and visualization. It supports EEG, ECoG, iEEG, MEA/organoid recordings, MATLAB/NumPy/CSV/HDF5/NWB-style exports, and ZIP archives containing supported neural files.
+
+The canonical recording model is:
 
 ```text
 samples × channels continuous signal
 + channel/electrode metadata
 + sampling/time metadata
-+ quality/provenance reports
-+ optional offline/live/comparative analysis
++ provenance and quality reports
++ optional analysis outputs
 ```
 
----
 
-### v0.10.2 ZIP archive + BCI Competition MAT support
+## v0.11.32 — Phase-forced Arnold Tongues / Kuramoto diagnostics
 
-The uploader can now accept `.zip` archives containing primary neural files such as `.mat`, `.edf`, `.set`, `.vhdr`, `.h5`, `.nwb`, `.npy`, or `.csv`. Archives are safely extracted inside the upload workspace, primary files are discovered inside the archive, and each discovered recording is converted normally. This specifically supports BCI Competition-style archives such as `BCICIV_1_mat.zip`, which contain multiple MATLAB `.mat` recordings with `cnt` signal arrays and `nfo` metadata.
+Version 0.11.32 upgrades the native **Arnold Tongues / Kuramoto** workflow with the phase-forced drive model from the latest notebook-style script. The backend now uses `a * sin(2*pi*b*t - theta_i)` as the external drive, keeps speed modes defaulted to `ultra`, and adds drive-locking, collective drive-locking, frequency-error, synchronization contrast, and drive-locking contrast diagnostics in addition to the existing EEG-derived natural-frequency summaries.
 
-### v0.10.1 NeuroMouse generated-data binding
+New plots include drive-locking Arnold tongue heatmaps, collective phase drive-locking, frequency-error heatmaps, visible-scale and honest-scale mean synchronization, synchronization and drive-locking contrasts, frequency-error contrast, dominant-frequency and omega rankings, dominant-frequency-vs-omega scatter, and line summaries for synchronization, drive-locking, and frequency error versus both drive amplitude and drive frequency.
 
-Normal conversion jobs now also try to build a NeuroMouse-compatible `data.json` from the converted `signal.npy`. The Results tab can open `/neuromouse-job/<job_id>/`, which is hard-bound to `/api/jobs/<job_id>/neuromouse/data.json`. This prevents the integrated workbench from silently loading `/neuromouse/data/data.json`, the bundled demo dataset, when the user expects uploaded/converted data.
 
-## Current System Overview
+## v0.11.32 — Arnold Tongues / Kuramoto
 
-The system now has four major layers:
+Version 0.11.32 adds a native **Arnold Tongues / Kuramoto** workflow adapted from the driven Kuramoto notebook. It estimates one dominant EEG frequency per channel from the converted `signal.npy`, normalizes those into dimensionless natural frequencies, then simulates a driven Kuramoto model over an Arnold tongue grid of drive amplitude `a` and drive frequency `b`.
+
+The workflow runs all available channels by default and defaults to `ultra` speed. Speed modes scale the Arnold tongue grid density, simulation duration, time samples, solver tolerances, and analysis sample cap:
+
+- `ultra`: compact grid and short simulation for quick checks.
+- `fast`: moderate grid and simulation length.
+- `balanced`: closer to notebook-style exploration.
+- `full`: 50×50 grid and longer simulation matching the original notebook settings most closely.
+
+Outputs are saved under `<recording>/advanced_methods/arnold_tongues_kuramoto/` and include `arnold_tongues_results.npz`, `arnold_tongues_grid.csv`, `kuramoto_natural_frequencies.csv`, top parameter-pair CSV, and a text summary. The GUI shows backend-generated black/cyan plots for mean synchronization heatmap, synchronization variability heatmap, dominant frequencies, dimensionless omega, mean synchronization vs amplitude/frequency, the best order-parameter trace, and the top Arnold tongue parameter pairs.
+
+## v0.11.32 — Lyapunov Spectrum Custom
+
+Version 0.11.32 adds a native **Lyapunov Spectrum** workflow adapted from the custom local Lyapunov spectrum notebook. It runs all available channels by default, uses precomputed embedding `.npy` files when present, or generates delay embeddings from canonical `signal.npy` when embedding files are missing. Speed modes default to `ultra` and scale the embedding dimensions, neighbor count, anchor stride, maximum steps per embedding, and maximum points per embedding.
+
+The backend computes local Jacobian least-squares maps with QR accumulation, saves raw spectra and expert metrics, and renders black/cyan plots for LLE ranking, KS entropy proxy versus Kaplan-Yorke dimension, spectrum heatmaps, mean spectra by embedding dimension, dissipation versus instability, runtime QC, metric correlations, LLE distributions, top spectra overlays, and positive-exponent counts.
+
+## v0.11.32 — Wavelet Leader Multifractal
+
+Version 0.11.32 adds a native **Wavelet Leader Multifractal** workflow adapted from the manual Haar wavelet-leader notebook. It runs all available channels by default, trims signals to dyadic power-of-two length, computes Haar detail coefficients, wavelet leaders, leader structure functions, `zeta(q)`, `alpha(q)`, and `f(alpha)`, then saves per-channel `.npz` files plus `wavelet_leader_summary.csv` and `wavelet_leader_zeta_alpha_falpha.csv`.
+
+The GUI exposes speed modes with **ultra** as the default. The modes adjust q-grid density, maximum analysis samples, and fitted dyadic scale caps. Backend-generated black/cyan plots include per-channel `zeta(q)` / `alpha(q)` / `f(alpha)` triptychs, a wavelet-leader width-by-channel plot, and an alpha-width ranking.
+
+
+## What changed in v0.11.32
+
+The default GUI is intentionally simple. It no longer opens with every experimental or advanced option visible.
+
+The home screen shows the core import/compare actions plus the main fractal-analysis actions, including Higuchi FD, Embedded FD, Saturation Profiling, Katz FD, Wavelet Hurst, Manual Expert MFDFA, compact MFDFA Spectrum, MFDFA Shuffle Surrogate, MFDFA IAAFT Surrogate, Wavelet Leader Multifractal, Lyapunov Spectrum, Arnold Tongues / Kuramoto, and the MFDFA Plot Viewer.
+
+Extra lower-level tools remain available, but they are behind clickable **More tools** tabs instead of crowding the first screen.
+
+The old experimental/legacy plot area has been removed from the normal GUI. Normal NeuroMouse is still available from **More tools → NeuroMouse**.
+
+## Main workflows
+
+### 1. Import dataset / datasets
+
+Use this for one or more raw neural files, folders, or ZIP archives. The app converts each recording into the local canonical output folder with files such as:
 
 ```text
-1. Conversion backend
-   raw neural file/folder → canonical converted recording
-
-2. Offline analysis backend
-   converted recording → features, summaries, NeuroMouse-compatible data.json
-
-3. Live replay backend
-   converted signal.npy → prerecorded live stream + raw/spectral WebSocket views
-
-4. HTML frontend + original NeuroMouse workbench
-   drag/drop, convert, analyze, compare, live replay, interactive visualization
-
-5. Raw backend job logging
-   saved job_log.txt + job_log.jsonl for each conversion/analysis/replay job
-```
-
-The two main browser pages are:
-
-```text
-http://127.0.0.1:8787/             Neuro Signal launcher/frontend
-http://127.0.0.1:8787/neuromouse/  Original NeuroMouse workbench, integrated
-```
-
-The launcher page is our control center. NeuroMouse is the interactive neural signal visualization and comparison workbench.
-
----
-
-## Important Design Boundary
-
-This project is currently focused on:
-
-- raw/continuous neural signals
-- variable channel/electrode counts
-- variable channel/electrode names
-- batch conversion
-- offline feature extraction
-- live replay from prerecorded recordings
-- feature-level dataset/group comparison
-- NeuroMouse-compatible visualization outputs
-- saved raw backend job logs for debugging and reproducibility
-
-This project intentionally does **not** currently focus on:
-
-- spike-event extraction as the primary data product
-- stimulation start/stop alignment
-- amplitude/frequency/location/block experimental labels
-- assuming all files are 32-channel EEG
-
-Those can be added later, but the current system is built around continuous neural dynamics.
-
----
-
-## One-Command Launch
-
-From the project folder, run:
-
-```bash
-python3 run_neuro_signal_app.py
-```
-
-The launcher script automatically:
-
-1. Checks whether the local package is already installed from this folder.
-2. Checks whether required Python libraries are importable.
-3. Runs installation only if something is missing.
-4. Starts the local FastAPI backend server.
-5. Waits until the server health check passes.
-6. Opens the browser.
-
-By default, it opens the launcher app. Depending on launch options, it can also open NeuroMouse.
-
-### Launcher options
-
-```bash
-python3 run_neuro_signal_app.py                 # normal install-check + launch
-python3 run_neuro_signal_app.py --open app      # open only our launcher
-python3 run_neuro_signal_app.py --open neuromouse
-python3 run_neuro_signal_app.py --open both
-python3 run_neuro_signal_app.py --no-browser    # start server only
-python3 run_neuro_signal_app.py --force-install # intentionally reinstall
-python3 run_neuro_signal_app.py --port 8790
-python3 run_neuro_signal_app.py --workspace ~/neuro_signal_workspace
-```
-
-`--force-install` is not required for normal use. It is only for intentionally reinstalling.
-
----
-
-## Manual Install, If Needed
-
-The launcher usually handles this automatically, but the manual development install is:
-
-```bash
-pip install -e '.[all,frontend,live,dev]'
-```
-
-The package extras include:
-
-```text
-all       broad file-format support: MAT/HDF5/NWB/EDF/Excel/Zarr/etc.
-frontend  FastAPI, Uvicorn, multipart upload support
-live      ZeroMQ/WebSocket live replay backend
-frontend  local HTML web app server dependencies
-dev       pytest and development tools
-```
-
----
-
-## Supported Input Types
-
-Archive uploads
-  - .zip files containing primary neural files such as .mat, .edf, .set, .vhdr, .h5, .nwb, .npy, or .csv
-  - archives are safely extracted into the upload workspace and then converted file-by-file
-
-
-The importer can inspect/convert many neural signal sources, including:
-
-```text
-MATLAB .mat
-  - .zip archives containing one or more MATLAB .mat datasets
-  - DSamp-style files
-  - EEGLAB-style structures
-  - FieldTrip-style structures
-  - generic MAT arrays with mapping support
-
-HDF5-like files
-  - generic HDF5
-  - NWB-style HDF5
-  - FinalSpark LiveMEA-style HDF5
-  - Cortical Labs CL1-style HDF5
-  - MaxWell/HD-MEA-style HDF5-like layouts
-
-Standard neuro formats
-  - EDF/BDF through optional MNE support
-  - EEGLAB .set through MNE where available
-  - NWB through optional PyNWB support
-
-Simple array/table formats
-  - .npy
-  - .npz
-  - .csv
-  - .tsv
-  - .xlsx
-```
-
-
-EEGLAB/BIDS sidecar note:
-
-For EEGLAB/BIDS recordings, upload the primary signal/header file together with its sidecars. For example, upload `.set` with its matching `.fdt`, and upload BIDS files such as `*_channels.tsv`, `*_electrodes.tsv`, `*_events.tsv`, and `*_eeg.json` in the same folder. The backend now keeps these sidecars available for the reader, but it skips converting sidecars as standalone recordings so they do not cause false job failures.
-
-For unknown MAT/HDF5 files, the system can generate a mapping template so the user can tell the importer which dataset is the signal, where channel names live, what the sampling rate is, and how units should be interpreted.
-
----
-
-## Main Converted Output Format
-
-A typical converted recording folder contains:
-
-```text
-converted_recording/
-├── signal.npy              continuous signal, shape samples × channels
-├── time.npy                optional time vector
-├── channels.csv            channel/electrode names and metadata
-├── electrodes.csv          electrode geometry if available
-├── metadata.json           sampling rate, source info, units, etc.
-├── quality_report.json     validation results and warnings
-├── provenance.json         source paths, adapter used, hashes, config info
-├── export_report.json      export choices and file sizes
-├── qc_report.html          quick quality-control report
-└── file_tree_report.json   HDF5-like structure report when applicable
-```
-
-The canonical rule is:
-
-```text
-signal.npy shape = samples × channels
-```
-
-Channel count and names are read from the data whenever possible. If names are missing, generated names are used:
-
-```text
-ch_000, ch_001, ch_002, ...
-```
-
----
-
-## Variable-Electrode Support
-
-The system is no longer fixed to 32 channels. Channel count and channel names flow from the converted data.
-
-The live and analysis pipeline supports:
-
-```text
-8, 16, 32, 64, 128, 256, 1024, or any other valid channel count
-```
-
-as long as the signal is a 2D continuous array:
-
-```text
-samples × channels
-```
-
-Channel metadata priority:
-
-```text
-1. channels.csv
-2. metadata.json channel_manifest
-3. source-file channel labels
-4. selected channel profile
-5. generated names ch_000, ch_001, ...
-```
-
-Included channel profiles include:
-
-```text
-generated_numeric
-common EEG 10-10 32-channel profile
-FinalSpark-style 32-electrode MEA profile
-```
-
-For FinalSpark-style 32-electrode MEA naming, the profile uses organoid/electrode-style labels such as:
-
-```text
-mea0_organoid0_e0
-...
-mea0_organoid3_e7
-```
-
----
-
-## Neuro Signal Launcher Frontend
-
-Open:
-
-```text
-http://127.0.0.1:8787/
-```
-
-The launcher frontend supports:
-
-- drag/drop file upload
-- raw-file conversion
-- path-based conversion for larger files/folders
-- heartbeat progress from backend pipeline stages
-- live replay setup
-- NeuroMouse analysis setup
-- group comparison setup
-- quick HTML preview plots
-- output-folder and report links
-
-### Main launcher modes
-
-```text
-Import / Convert
-  Convert raw files into canonical signal.npy + metadata outputs.
-
-NeuroMouse
-  Analyze current uploads in NeuroMouse, build data.json from converted folders,
-  or launch live replay into NeuroMouse.
-
-Live Replay
-  Replay a converted recording like a live stream.
-
-Compare
-  Compare one dataset/group against another using feature-level summaries.
-
-Results
-  Open output folders, reports, generated data.json, NeuroMouse links, and raw job logs.
-
-Raw Job Logs
-  Every backend job now writes both a human-readable `job_log.txt` and a structured `job_log.jsonl`. These logs record pipeline events such as uploaded files, selected adapters, detected signal shapes, sampling-rate decisions, output paths, generated NeuroMouse dataset links, warnings, and errors. They do not dump raw neural samples.
-```
-
----
-
-## Original NeuroMouse Integration
-
-The project includes the **original NeuroMouse workbench files** that were provided by the user.
-
-They are stored in two places:
-
-```text
-neuro_signal_webapp/neuromouse/    served integrated copy
-
-```
-
-NeuroMouse is served at:
-
-```text
-http://127.0.0.1:8787/neuromouse/
-```
-
-The integrated NeuroMouse copy has minimal compatibility patches so it can:
-
-- load backend-generated `data.json` through a query parameter
-- distinguish demo data from backend-generated datasets
-- show a visible backend-dataset banner only for real backend outputs
-- accept variable channel counts instead of requiring 32 channels
-- load NeuroMouse comparison manifests
-- connect to NeuroMouse-compatible live replay WebSocket streams
-- fall back to generic channel/electrode layouts when EEG 10-20/10-10 names are not available
-
----
-
-## Analyze in NeuroMouse
-
-This is the recommended workflow for interactive offline analysis.
-
-In the launcher:
-
-1. Drag/drop a raw neural file or files.
-2. Choose options if needed.
-3. Click **Analyze in NeuroMouse**.
-
-The backend then:
-
-```text
-raw file/folder
-    ↓
-convert if needed
-    ↓
-load signal.npy + channels.csv + metadata.json
-    ↓
-compute offline NeuroMouse features
-    ↓
-write outputs/<job_id>/neuromouse/data.json
-    ↓
-open NeuroMouse with:
-    /neuromouse/?dataset=/api/jobs/<job_id>/neuromouse/data.json&backend_job=<job_id>&backend=1
-```
-
-Important: NeuroMouse still plots a `data.json` file, because that is its native plotting format. The difference is that the `data.json` should now be **generated from your dragged/converted data**, not the bundled demo file.
-
-### How to confirm it loaded your data
-
-A correct backend-generated NeuroMouse page should show a source like:
-
-```text
-/api/jobs/<job_id>/neuromouse/data.json
-```
-
-It should not show:
-
-```text
-/neuromouse/data/data.json
-```
-
-If the source is `/neuromouse/data/data.json`, you are looking at the bundled NeuroMouse demo dataset, not the generated backend dataset.
-
-Use the **Open generated NeuroMouse dataset** link in the launcher Results tab after analysis completes.
-
----
-
-## NeuroMouse Data Output
-
-The backend-generated NeuroMouse folder typically contains:
-
-```text
-neuromouse/
-├── data.json
-└── neuromouse_manifest.json
-```
-
-`data.json` includes NeuroMouse-compatible offline analysis arrays such as:
-
-```text
-meta
-welch_psd
-centroid
-geometry
-channel_summary
-optional channel/group summaries
-```
-
-For large recordings, the backend samples/limits offline windows according to the NeuroMouse analysis options in the launcher. The original raw converted `signal.npy` is still preserved.
-
----
-
-## Live Replay in NeuroMouse
-
-Live replay is for prerecorded data streamed like a live source.
-
-The data flow is:
-
-```text
-converted signal.npy
-    ↓
-variable-electrode live backend
-    ↓
-NeuroMouse-compatible WebSocket sample stream
-    ↓
-NeuroMouse live source view
-```
-
-The NeuroMouse live WebSocket endpoint uses metadata-driven frames:
-
-```text
-channel_names
-n_channels
-sampling_rate_hz
-samples
-```
-
-This allows NeuroMouse to render data with any channel count, not only 32-channel EEG.
-
----
-
-## Comparative Analysis
-
-The system supports feature-level group comparison.
-
-Use this when comparing:
-
-```text
-one dataset vs another dataset
-one group of recordings vs another group
-baseline vs treatment
-trained vs untrained
-subject/session A vs subject/session B
-```
-
-For comparisons, the backend can:
-
-1. Convert raw files if needed.
-2. Build NeuroMouse-compatible `data.json` files for each recording.
-3. Compute feature-level summaries.
-4. Build a comparison manifest.
-5. Open NeuroMouse on the comparison.
-
-This is safer than direct channel-to-channel comparison when datasets have different electrode counts or names.
-
-### Same-channel vs feature-level comparison
-
-Same-channel comparison is appropriate only when channel layouts match.
-
-Feature-level comparison is appropriate when layouts differ, such as:
-
-```text
-32-channel EEG vs 64-channel EEG
-FinalSpark 32-electrode MEA vs Cortical Labs 64-channel MEA
-8-channel organoid recording vs 32-channel MEA recording
-```
-
-Feature-level comparison uses global/channel-distribution summaries instead of assuming channel `Fp1` equals `ch_000`, etc.
-
----
-
-## CLI Quickstart
-
-Inspect a file:
-
-```bash
-neuro-import inspect path/to/file.h5
-```
-
-Convert one file:
-
-```bash
-neuro-import convert path/to/file.h5 --output converted_recording
-```
-
-Batch convert a folder:
-
-```bash
-neuro-import batch raw_dataset/ --output converted_dataset/
-```
-
-Generate a mapping template for an unknown MAT/HDF5 file:
-
-```bash
-neuro-import generate-mapping weird_file.h5 --output mapping_help --sampling-rate 30000
-```
-
-Convert with a mapping file:
-
-```bash
-neuro-import convert weird_file.h5 --mapping mapping_help/mapping_template.yaml --output converted_weird
-```
-
----
-
-## Mapping YAML for Unknown Files
-
-Example:
-
-```yaml
-signal_path: /recording/samples
-sampling_rate: 30000
-time_path: null
-channel_names_path: /metadata/channel_names
-orientation: auto
-original_units: adc_counts
-target_units: microvolts
-scale_factor: 0.195
-offset: 0
-metadata:
-  source_family: custom_hdf5
-```
-
-Use mapping files when the importer can open a file but cannot safely infer which array is the neural signal.
-
----
-
-## Live Backend Commands
-
-Run a complete variable-electrode live backend:
-
-```bash
-neuro-live-backend \
-  --source converted_recording/signal.npy \
-  --channels-csv converted_recording/channels.csv \
-  --metadata-json converted_recording/metadata.json \
-  --fs 1000 \
-  --channel-profile auto
-```
-
-For FinalSpark-style 32-electrode MEA naming:
-
-```bash
-neuro-live-backend \
-  --source converted_recording/signal.npy \
-  --fs 30000 \
-  --channel-profile finalspark_32
-```
-
-Individual components:
-
-```bash
-neuro-live-player --source signal.npy --fs 1000 --channel-profile generated_numeric
-neuro-live-receiver
-neuro-live-analyzer
-```
-
-Packaged standalone live HTML viewers:
-
-```text
-neuro_importer_live/raw_visualizer_variable.html
-neuro_importer_live/spectral_visualizer_variable.html
-```
-
----
-
-## Backend API Summary
-
-The local FastAPI server exposes endpoints used by the HTML launcher and NeuroMouse integration.
-
-Important routes include:
-
-```text
-GET  /                                  launcher frontend
-GET  /neuromouse/                       original NeuroMouse workbench
-GET  /api/health                        server health/version/workspace
-POST /api/jobs/convert-upload           convert uploaded files
-POST /api/jobs/convert-paths            convert path-based files/folders
-POST /api/jobs/inspect-upload           inspect uploaded files
-POST /api/jobs/analyze-neuromouse-upload
-POST /api/jobs/analyze-neuromouse-paths
-POST /api/jobs/neuromouse-from-converted
-POST /api/jobs/compare
-POST /api/jobs/compare-neuromouse
-GET  /api/jobs/<job_id>
-GET  /api/jobs/<job_id>/raw-log.txt
-GET  /api/jobs/<job_id>/raw-log.jsonl
-GET  /api/jobs/<job_id>/raw-log
-GET  /api/jobs/<job_id>/neuromouse/data.json
-GET  /api/jobs/<job_id>/neuromouse/manifest.json
-WS   /api/jobs/<job_id>/events          heartbeat progress events
-WS   /ws/neuromouse/live                NeuroMouse-compatible live sample stream
-GET  /api/file?path=...                 serve generated output file
-GET  /api/open-output?path=...          ask OS to open output folder
-```
-
----
-
-## Output Folder Structure
-
-By default, the app writes to a workspace like:
-
-```text
-~/neuro_signal_app_workspace/
-├── uploads/
-├── outputs/
-│   └── <job_id>/
-│       ├── converted/
-│       ├── neuromouse/
-│       │   ├── data.json
-│       │   └── neuromouse_manifest.json
-│       ├── comparison_manifest.json
-│       ├── job_log.txt              human-readable raw backend job log
-│       ├── job_log.jsonl            machine-readable structured event log
-│       ├── qc_report.html
-│       └── job/result files
-└── logs/
-```
-
-The exact output folder is shown in the launcher Results tab after a job completes.
-
----
-
-## Raw Backend Job Logs
-
-Each job writes two saved logs into its output folder:
-
-```text
-job_log.txt    human-readable backend/pipeline log
-job_log.jsonl  structured JSON-lines event log
-```
-
-These logs are intended for support, debugging, and reproducibility. They record the job id, job type, input paths, selected pipeline steps, progress events, adapter/conversion status, warnings, errors, output folders, and generated NeuroMouse dataset URLs. They are backend logs, not raw neural sample dumps.
-
-In the launcher Results tab, use:
-
-```text
-View Raw Job Log
-Download Raw Log
-Download JSONL Log
-```
-
-The same files are also available through local routes:
-
-```text
-/api/jobs/<job_id>/raw-log.txt
-/api/jobs/<job_id>/raw-log.jsonl
-```
-
----
-
-## Quality Control and Provenance
-
-Each conversion stores quality/provenance files when possible:
-
-```text
+signal.npy
+channels.csv
+metadata.json
 quality_report.json
-provenance.json
-export_report.json
-qc_report.html
 ```
 
-These include information such as:
+### 2. Compare datasets
 
-- adapter used
-- original source path
-- detected signal shape
-- detected or overridden sampling rate
-- channel count
-- unit conversion / scale factor
-- warnings
-- file hashes where available
-- assumptions made during conversion
+Use this when you have two dataset groups and want to compare converted recordings. This is intended for workflows such as baseline vs treatment, trained vs untrained, healthy vs diagnosed, or repeatability checks.
 
----
+### 3. Run Higuchi FD
 
-## Troubleshooting
+Runs a backend Higuchi fractal-dimension analysis on the selected/latest converted recording.
 
-### NeuroMouse / NeuroMouse still shows the demo data
+It computes and plots:
 
-The app now generates a NeuroMouse-compatible `data.json` after both **Convert** and **Analyze in NeuroMouse** jobs whenever possible. The generated page should open through a job-specific URL:
+- Higuchi fractal dimension by channel
+- Log-L(k) fit diagnostics
+- Scalp/channel layout HFD map
+- Regional HFD summary
+- Left-right asymmetry
+- Rolling HFD stability
+- Complexity vs temporal instability
+
+Outputs are saved under:
 
 ```text
-/neuromouse-job/<job_id>/
+<recording_folder>/advanced_methods/higuchi_fractal_dimension/
 ```
 
-That job page is hard-bound to:
+### 4. Run embedded FD
+
+Runs the embedded-attractor fractal-dimension workflow based on the notebook analysis supplied for this project. It computes box-counting fractal dimension and sampled Grassberger-Procaccia correlation dimension D2 across embedding dimensions, with black/cyan diagnostic plots and CSV summaries.
+
+It supports speed modes:
 
 ```text
-/api/jobs/<job_id>/neuromouse/data.json
+ultra
+fast
+balanced
+full
 ```
 
-It should not silently fall back to the bundled demo file:
+It can use precomputed embedding files when available, or generate delay embeddings from canonical `signal.npy` when embeddings are not already present.
+
+It computes and plots:
+
+- Correlation dimension D2 vs embedding dimension
+- Box-counting FD vs embedding dimension
+- Mean embedded fractal dimensions
+- D2 heatmap
+- Box-counting FD heatmap
+- Channel dimension-complexity ranking
+- D2 vs box-counting FD scatter
+- Correlation-dimension saturation diagnostic
+- Fit-quality control
+- Diagnostic correlation-dimension fits
+
+Outputs are saved under:
 
 ```text
-/neuromouse/data/data.json
+<recording_folder>/advanced_methods/embedded_fractal_dimension/
 ```
 
-If you still see the demo source, first make sure the old server is stopped and the new package was installed from the real app folder:
+## More tools
+
+Additional tools are still present, but they are no longer shown by default.
+
+Open **More tools** in the GUI to access:
+
+- NeuroMouse
+- All Advanced Methods
+- Quick Visualizations
+- Live Replay
+- Results
+
+### NeuroMouse
+
+The normal NeuroMouse workbench remains available for PSD heatmaps, centroid plots, geometry views, channel grids, phase-space views, playback, live replay, and other NeuroMouse-native visualizations.
+
+Open it from:
+
+```text
+More tools → NeuroMouse
+```
+
+or directly at:
+
+```text
+http://127.0.0.1:<port>/neuromouse/
+```
+
+
+### Dimension Saturation Profiling
+
+Version 0.11.32 adds a native **Dimension Saturation Profiling** workflow adapted from the notebook-style script. It uses the embedded fractal-dimension summary, or automatically runs Embedded FD first, then computes D2 increments, absolute/relative saturation estimates, tail slopes, plateau summaries, and class counts. The web GUI renders the same black/cyan-style plots: D2(m) saturation profiles, ΔD2 heatmap, saturation dimension barplot, tail-slope barplot, and saturation class counts.
+
+Outputs are saved under:
+
+```text
+<recording_folder>/advanced_methods/dimension_saturation_profiling/
+```
+
+## Running the app
+
+From the extracted app folder:
 
 ```bash
-pkill -f neuro_signal_webapp.app_server
-cd /home/a/projects/Complete-Neural-Signal-Analysis/GUI/neuro_signal_importer_analyzer
-python3 run_neuro_signal_app.py --force-install
+python3 run_neuro_signal_app.py --port 8799 --force-install
 ```
 
-Then rerun the job and open the **Open generated NeuroMouse dataset from this job** link in the Results tab. You can intentionally open the bundled demo with:
+Then open:
 
 ```text
-/neuromouse/?demo=1
+http://127.0.0.1:8799
 ```
 
-### Browser did not open automatically
-
-Open manually:
+Check that you are running the correct copy:
 
 ```text
-http://127.0.0.1:8787/
+http://127.0.0.1:8799/api/health
 ```
 
-or:
+Expected result:
 
-```text
-http://127.0.0.1:8787/neuromouse/
+```json
+{
+  "ok": true,
+  "version": "0.11.32",
+  "app_file": ".../neuro_signal_importer_analyzer/neuro_signal_webapp/app_server.py"
+}
 ```
 
-### Port already in use
+The `app_file` path must **not** point into `.local/share/Trash`. If it does, an old Python server is still running.
 
-Use another port:
+To kill old servers:
 
 ```bash
-python3 run_neuro_signal_app.py --port 8790
+pkill -9 -f run_neuro_signal_app.py || true
+pkill -9 -f neuro_signal_webapp.app_server || true
+pkill -9 -f uvicorn || true
+fuser -k 8787/tcp 2>/dev/null || true
+fuser -k 8799/tcp 2>/dev/null || true
 ```
 
-### Install check did not pick up new code
+Then restart the app from the intended project folder.
 
-Force reinstall intentionally:
+## Analysis output locations
 
-```bash
-python3 run_neuro_signal_app.py --force-install
-```
-
-### Large files are slow in browser upload
-
-For very large files/folders, prefer path-based conversion or CLI conversion rather than browser upload. Browser drag/drop may copy data into the local workspace first.
-
-### Unknown MAT/HDF5 file cannot convert
-
-Generate a mapping template:
-
-```bash
-neuro-import generate-mapping weird_file.h5 --output mapping_help --sampling-rate 30000
-```
-
-Then edit the YAML and rerun conversion with `--mapping`.
-
----
-
-## Project Layout
+Converted recordings and analysis outputs are stored in the configured workspace, usually:
 
 ```text
-neuro_importer/
-  conversion backend, adapters, readers, validators, exporters
-
-neuro_importer_live/
-  variable-electrode live player, receiver, analyzer, WebSocket bridges, live HTML viewers
-
-neuro_importer_analysis/
-  offline feature extraction and comparative analysis
-
-neuro_importer_neuromouse/
-  NeuroMouse-compatible data.json builder, comparison packager, live bridge
-
-neuro_signal_webapp/
-  local FastAPI app, launcher frontend, integrated served NeuroMouse copy
-
-neuro_signal_webapp/static/
-  our HTML launcher frontend
-
-neuro_signal_webapp/neuromouse/
-  custom integrated NeuroMouse workbench with backend-loading, variable-electrode, live replay, and advanced-plot compatibility patches
-
-run_neuro_signal_app.py
-  install-check, server startup, browser launcher
+/home/a/neuro_signal_app_workspace
 ```
 
----
-
-## Testing
-
-Run tests with:
-
-```bash
-pytest
-```
-
-The test suite covers:
-
-- synthetic DSamp MAT conversion
-- next-generation adapters
-- HDF5 continuous adapters
-- batch/QC/window features
-- mapping/unit/large-file exports
-- heartbeat progress events
-- HTML/FastAPI app routes
-- variable-electrode live backend
-- NeuroMouse integration routes
-- progress-event regression handling
-
----
-
-## Recommended User Workflow
-
-For a normal user:
+Advanced method results are stored inside each recording folder:
 
 ```text
-1. Run: python3 run_neuro_signal_app.py
-2. Browser opens at http://127.0.0.1:8787/
-3. Drag/drop raw neural file(s).
-4. Click Analyze in NeuroMouse.
-5. Wait for heartbeat progress to finish.
-6. Use the generated NeuroMouse dataset link in Results.
-7. Explore the data in NeuroMouse.
+<recording_folder>/advanced_methods/<method_name>/
 ```
 
-For development/CLI:
+Common output files include:
 
 ```text
-1. Convert raw files with neuro-import.
-2. Inspect converted signal.npy / channels.csv / metadata.json.
-3. Build NeuroMouse data.json through the launcher or backend API.
-4. Run live replay or comparison as needed.
+summary.csv
+channel_summary.csv
+mean_by_dimension.csv
+result.json
+plot data used by the web GUI
 ```
 
----
+## Developer notes
 
-## Current Status
+- The default GUI should stay minimal.
+- New or experimental tools should go under **More tools**, not on the first screen.
+- Fractal-dimension analyses should continue to use the black/cyan plotting style from the supplied notebook workflow.
+- Normal NeuroMouse should remain available, but not shown as a wall of buttons on startup.
 
-This is the first complete integrated version where:
+## v0.11.32 — Katz Fractal Dimension
+
+Version 0.11.32 adds a native **Katz Fractal Dimension** workflow adapted from the notebook-style Katz embedding script. The backend computes Katz FD for each embedded trajectory, using precomputed embedding `.npy` files when available or generating delay embeddings from canonical `signal.npy` when they are not. The web GUI keeps the same black/cyan plotting style and renders:
+
+- Katz FD for each embedding
+- Mean Katz FD vs embedding dimension
+- Channel × embedding-dimension Katz FD heatmap
+- Katz FD trajectories across embedding dimensions
+
+Outputs are saved under:
 
 ```text
-raw neural files/folders
-    → canonical conversion
-    → variable-electrode metadata
-    → offline NeuroMouse-compatible analysis
-    → integrated original NeuroMouse visualization
-    → optional live replay
-    → optional group comparison
+<recording_folder>/advanced_methods/katz_fractal_dimension/
 ```
 
-The system is still under active development, but the architecture is now set up so our backend can feed the original NeuroMouse workbench while preserving our own HTML launcher/frontend and variable-electrode neuro-signal pipeline.
 
 
-## v0.9.7 Sidecar Upload Fix
+### Plot readability fix
 
-This update makes browser multi-file uploads treat EEGLAB `.fdt`, BrainVision `.eeg`/`.vmrk`, and BIDS TSV/JSON files as sidecars only. They are copied into the upload folder so the primary `.set` or `.vhdr` file can read them, but they are not converted as standalone recordings. This fixes failures where `sub-001_task-Rest_eeg.fdt` was incorrectly sent to the converter by itself.
+All app-native canvas plots now reserve explicit label/tick margins and draw numeric x/y tick labels in cyan/white. This applies across Higuchi FD, Embedded FD, Dimension Saturation Profiling, Katz FD, and Manual Wavelet Hurst plots, while keeping the black/cyan notebook style.
 
+## v0.11.32 — Manual Wavelet Hurst Exponent
 
-## v0.9.8 Sidecar Filtering and Explicit Raw Logs
-
-This release makes sidecar handling stricter and the raw job logs more explicit.
-
-- `.fdt`, `.eeg`, `.vmrk`, BIDS JSON/TSV sidecars, and other non-primary files are copied for traceability but are not converted as standalone recordings.
-- If a `.fdt` sidecar is passed directly and a matching `.set` header exists beside it, the job manager promotes the `.set` file and logs that decision.
-- Conversion and NeuroMouse analysis logs now include app version, requested paths, primary files selected for conversion, skipped sidecars, and promoted sidecar-to-primary matches.
-- The launcher now refuses to silently reuse an older server running on the same port when its `/api/health` version does not match the launcher version.
-
-For EEGLAB/BIDS uploads, upload the `.set` and `.fdt` together, but the raw log should show only the `.set` under `primary_files`. The `.fdt` should appear under `skipped` or `promoted`, not under `Converting ...`.
+Version 0.11.32 adds a native **Manual Wavelet Hurst Exponent** workflow adapted from the notebook-style manual wavelet script. It computes Haar/db4 DWT detail coefficients, estimates Hurst exponent from log2(scale) vs log2(std(detail coefficients)), computes a fractal-dimension proxy `D ≈ 2 - H`, and renders black/cyan plots for raw offset traces, Hurst ranking, fit R², scaling curves, detail stdev and energy heatmaps, regional/hemisphere summaries, topographic Hurst maps, and temporal stability.
 
 
-### v0.11.1 Advanced NeuroMouse Plot Generation
+## v0.11.32 — Manual Expert MFDFA
 
-Backend-generated NeuroMouse datasets now include the same major analysis objects used by the original NeuroMouse demo views: Welch PSD heatmaps, spectral geometry, polar alpha chronomap, Kuramoto phase animation, channel network / PLV synchrony, Higuchi fractal-dimension traces, area-normalized PSD, and a lightweight TDA persistence view. These objects are generated from the uploaded/converted `signal.npy`, not from the bundled demo `data.json`.
-
-
-## v0.11.1 visualization stability fix
-
-This release restores the core NeuroMouse plotting path and makes the browser workbench crash-resistant. Backend-generated NeuroMouse datasets still include the original plot families, but the browser now validates and normalizes generated data before drawing. If one optional advanced view cannot render, the PSD heatmap, centroid, geometry stack, channel grid, playback, and other working views remain available instead of the entire page failing.
-
-## v0.11.1 NeuroMouse frontend visualization restore
-
-This patch fixes a browser-side NeuroMouse data normalization bug introduced in the visualization-stability layer. The bug truncated frequency and time arrays to one value before rendering, which could make the NeuroMouse buttons appear inactive and leave the PSD, centroid, geometry, playback, and advanced visualization panels blank. v0.11.1 preserves the full generated `data.json` arrays, keeps the v0.11.1 advanced analysis outputs, and keeps per-view error isolation so one optional advanced view cannot break the whole workbench.
+Version 0.11.32 adds a native **Manual Expert MFDFA** workflow adapted from the notebook-style MFDFA script. It runs the actual MFDFA analysis from canonical `signal.npy` before any viewer step, computing Fq(s), generalized Hurst curves h(q), tau(q), alpha/f(alpha), alpha width, spectrum asymmetry, h(q=0), fit R², and a multifractal complexity score. The app saves CSV/NPZ/TXT outputs and shows backend-generated black/cyan Matplotlib plots in the GUI so axis labels, ticks, legends, and colorbars remain visible. Plots include raw EEG offset traces, alpha-width and asymmetry rankings, h(q) curves, multifractal spectra, h(q) heatmaps, summary metric heatmaps, width-vs-h(0) scatter, spectrum/Fq galleries, topographic alpha-width maps, regional summaries, homologous hemisphere asymmetry, and optional temporal-stability views.
 
 
-## v0.11.1 NeuroMouse frontend rollback/stability fix
+## v0.11.32 — Manual MFDFA Spectrum + ultra defaults
 
-This release restores the known-good NeuroMouse browser frontend path and removes the browser-side normalization layer that could stop buttons and plots from initializing. The backend can still generate richer NeuroMouse `data.json` files from converted recordings, but the browser now receives them through the stable loader/plotting code. The bundled demo `data/data.json` is restored to the original NeuroMouse reference dataset so generated backend datasets cannot look identical to an accidentally-overwritten demo file.
+Version 0.11.32 adds a native **Manual MFDFA Spectrum** workflow adapted from the compact spectrum script. It computes `Fq(s)`, `h(q)`, `tau(q)`, `alpha`, and `f(alpha)` per channel, saves per-channel `.npz` files, writes `mfdfa_manual_spectrum_summary.csv`, and renders black/cyan Matplotlib plots for every channel: `h(q)`, `tau(q)`, singularity spectrum, plus a spectrum-width-by-channel summary.
 
-The local FastAPI server now sends no-cache headers for launcher and NeuroMouse assets, and the HTML entry points use updated cache-busting query strings. After installing this version, restart the server and hard-refresh once if the browser was open during an older version.
+All analysis speed selectors now default to **ultra**. For analyses that did not already expose the shared speed labels, the app now uses `ultra`, `fast`, `balanced`, and `full` options mapped to the relevant variables for that analysis.
 
+## v0.11.32 — MFDFA Plot Viewer
 
-## v0.11.1 NeuroMouse blank-page/button recovery fix
+Version 0.11.32 adds a native **MFDFA Plot Viewer** workflow adapted from the notebook-style viewer script. This is not the MFDFA recomputation step; it organizes the outputs from **Manual Expert MFDFA**. It scans the per-channel MFDFA PNG plots and `mfdfa_summary_<mode>.csv`, then generates the same black/cyan viewer products as the notebook:
 
-This patch changes the NeuroMouse browser startup so controls are bound before plotting modules initialize. Each visualization panel is now isolated: if PSD, centroid, geometry, channel grid, Kuramoto, network, TDA, or another optional view throws a browser-side error, the rest of the NeuroMouse workbench continues to load and that panel shows a visible error message instead of blanking the whole page. The patch also cache-busts the NeuroMouse JavaScript and CSS so stale broken frontend files are not reused after updating.
+- existing contact-sheet view when available
+- ranked MFDFA per-channel contact sheet
+- top alpha-width contact sheet
+- top absolute-asymmetry contact sheet
+- individual per-channel image pages
+- saved-image inventory plot
+- alpha-width ranking
+- spectrum-asymmetry ranking
+- composite complexity-score ranking
+- summary metric heatmap
+- width-vs-asymmetry scatter
 
-## v0.11.1 NeuroMouse persisted-job data endpoint fix
+If the expected per-channel MFDFA images are missing, the viewer can optionally run **Manual Expert MFDFA** first with per-channel plots enabled, then build the viewer outputs from those generated files.
 
-This patch fixes a NeuroMouse startup error where a generated dataset URL such as
-`/api/jobs/<job_id>/neuromouse/data.json` could return HTTP 404 after the local
-server restarted or after the in-memory job table was cleared. The API now
-recovers generated NeuroMouse `data.json` files from the saved workspace output
-folder, including `outputs/<job_id>/neuromouse/*/data.json` and legacy
-`speedmouse` folder names. This keeps browser history, Results-tab links, and
-job-specific NeuroMouse pages usable as long as the job output folder still
-exists on disk.
+## v0.11.32 — MFDFA Shuffle Surrogate
 
+Version 0.11.32 adds a native **MFDFA Shuffle Surrogate** workflow adapted from the shuffle-surrogate MFDFA script. It runs all available channels by default and compares the original multifractal spectrum width `Δα` against shuffled surrogate `Δα` distributions.
 
-## v0.11.1 NeuroMouse latest-dataset 404 recovery
+The method exposes the same speed labels used by the other analysis tabs, with **ultra** as the default. The speed modes map to the MFDFA/shuffle variables used by the notebook workflow:
 
-This patch fixes NeuroMouse startup errors where an older browser-stored job URL could request `/api/jobs/<old_job_id>/neuromouse/data.json` and return HTTP 404 even after a newer conversion produced valid NeuroMouse output. The launcher now asks the backend for the newest generated NeuroMouse dataset before trusting local browser storage, plain `/neuromouse/` prefers the newest backend dataset, `/neuromouse-latest/` hard-binds NeuroMouse to the newest generated output, and old job-specific data endpoints fall back to the newest generated dataset instead of blanking the NeuroMouse page when a stale job id is requested.
+- `ultra`: fewer scales/q-values and 5 shuffles per channel for fast screening
+- `fast`: moderate scales/q-values and 10 shuffles per channel
+- `balanced`: notebook-like `logspace(0.7, 4, 30)`, `q=-5..5` with 41 q-values, and 20 shuffles per channel
+- `full`: denser q/scales and 50 shuffles per channel
 
-
-## v0.11.1 update
-
-The app now carries only the custom integrated NeuroMouse workbench under `neuro_signal_webapp/neuromouse/`. The old `vendor/neuromouse_original/` reference copy was removed because the upstream NeuroMouse repository is expected to change regularly. The integrated copy remains local so the Neuro Signal backend can reliably load generated datasets, archive conversions, live replay streams, and variable-electrode advanced visualizations.
-
-## v0.11.1 native Advanced Methods runner
-
-The launcher now includes an **Advanced Methods** tab that exposes NeuroMouse-style backend method analysis directly inside the Neuro Signal app instead of requiring the original NeuroMouse backend SDK UI. It runs against a converted recording folder containing `signal.npy`, `channels.csv`, and `metadata.json`, or can auto-select the latest converted recording.
-
-Available native methods:
-
-- `band_power_summary`: Welch PSD band-power and relative-power table for delta/theta/alpha/beta/gamma or custom frequency ranges.
-- `spike_detect`: threshold-based per-channel event/spike detection from continuous signals, with polarity, refractory, optional filtering, and stored spike-time output.
-- `network_burst`: multi-channel burst timeline built from detected spikes/events.
-- `electrode_connectivity`: pairwise binned spike-train cross-correlation matrix and strongest-link table.
-
-New local API endpoints:
+Outputs are saved under:
 
 ```text
-GET  /api/advanced-methods
-GET  /api/advanced-methods/latest-recording
-POST /api/advanced-methods/run
+<recording_folder>/advanced_methods/manual_mfdfa_shuffle_surrogate/
 ```
 
-Each run writes `<converted_recording>/advanced_methods/<method_id>_result.json` so method outputs are reproducible and can be inspected outside the browser.
+The GUI renders backend Matplotlib plots in the same black/cyan style:
+
+- per-channel original `h(q)`
+- per-channel original singularity spectrum `f(alpha)`
+- per-channel shuffled alpha-width histogram with original width marker
+- original-vs-shuffle mean summary bar plot
+- width-excess ranking, `original Δα - shuffle mean Δα`
+
+The method also writes `shuffle_mfdfa_summary.csv`, `shuffle_mfdfa_widths_long.csv`, per-channel `.npz` files, and a text summary.
 
 
-## v0.11.14 NeuroMouse advanced plot sections in launcher
+## v0.11.32 — MFDFA IAAFT Surrogate
 
-The main web launcher now includes a dedicated **NeuroMouse Plots** tab with visible sections for Polar Alpha Chronomap, Kuramoto Animation, Channel Network, and TDA View. These panels render from the latest generated NeuroMouse `data.json` so users no longer need to open the full embedded NeuroMouse workbench just to confirm that the advanced NeuroMouse plot objects were generated. The full workbench remains available from the same tab.
+Version 0.11.32 adds a native **MFDFA IAAFT Surrogate** workflow adapted from the IAAFT-surrogate MFDFA script. It runs all available channels by default and compares the original multifractal spectrum width `Δα` against IAAFT surrogate `Δα` distributions. IAAFT surrogates preserve the empirical amplitude distribution and approximate power spectrum more tightly than simple shuffled surrogates.
 
-## v0.11.14 NeuroMouse advanced plot visibility fix
+The method exposes the same speed labels used by the other analysis tabs, with **ultra** as the default. The speed modes map to relevant MFDFA/IAAFT variables:
 
-This patch makes the four NeuroMouse advanced visualization sections visible immediately when the web GUI opens, instead of relying on users noticing an added tab. The launcher now opens on **NeuroMouse Plots** by default, wraps the tab bar on narrow browser windows, highlights the plot tab, provides an Import / Convert button from the plots page, and includes an Import-page reminder listing **Polar Alpha Chronomap**, **Kuramoto Animation**, **Channel Network**, and **TDA View**. The browser initializes placeholders immediately and auto-loads the latest generated NeuroMouse `data.json` when available.
+- `ultra`: fewer scales/q-values, 3 IAAFT surrogates per channel, and fewer IAAFT iterations for fast screening
+- `fast`: moderate scales/q-values, 6 IAAFT surrogates per channel, and moderate IAAFT iterations
+- `balanced`: notebook-like `logspace(0.7, 4, 30)`, `q=-5..5` with 41 q-values, 20 IAAFT surrogates, and 200 IAAFT iterations
+- `full`: denser q/scales, more surrogates, and more IAAFT iterations
 
-## v0.11.14 Advanced Analysis visibility fix
+Outputs are saved under:
 
-This patch removes the confusing separate NeuroMouse Plots navigation requirement. The main launcher now exposes **Polar Alpha Chronomap**, **Kuramoto Animation**, **Channel Network**, and **TDA View** directly inside the active **Advanced Analysis** tab, above the backend method runner. The Import / Convert landing card now points to Advanced Analysis. The embedded original NeuroMouse workbench also starts its Advanced Analysis drawer closed and reliably opens the requested advanced panels when clicked.
+```text
+<recording_folder>/advanced_methods/manual_mfdfa_iaaft_surrogate/
+```
 
+The GUI renders backend Matplotlib plots in the same black/cyan style:
 
-## v0.11.14 Advanced Analysis force-visible fix
+- per-channel original `h(q)`
+- per-channel original singularity spectrum `f(alpha)`
+- per-channel IAAFT alpha-width histogram with original width marker
+- original-vs-IAAFT mean summary bar plot
+- width-excess ranking, `original Δα - IAAFT mean Δα`
 
-The four requested NeuroMouse advanced sections are now forced visible in the main launcher and in the embedded NeuroMouse workbench. The launcher no longer depends on tab state to show Polar Alpha Chronomap, Kuramoto Animation, Channel Network, or TDA View. The embedded workbench opens Advanced Analysis by default and keeps those four panels expanded.
-
-## v0.11.14 Original NeuroMouse advanced plotting integration
-
-This build replaces the bundled modified NeuroMouse browser workbench with the original NeuroMouse plotting/runtime files from the provided NeuroMouse repository for the advanced visualization path. The embedded workbench now includes the original `index.html`, `style.css`, `js/viewer.js`, `js/ui-panels.js`, `js/viewer-structure.js`, and original plot modules for Polar Alpha Chronomap, Kuramoto Animation, Channel Network, and TDA View. The importer/analyzer only adds a small dataset binding hook so generated backend `data.json` files load inside the original workbench.
-
-
-## v0.11.14 Higuchi Fractal Dimension backend analysis
-
-This update adds a native Advanced Methods backend analysis for Higuchi fractal dimension. The method computes per-channel HFD, log-log fit diagnostics, scalp/channel layout points, regional summaries, left-right asymmetry, rolling temporal stability, temporal variability, and complexity-vs-instability data. The Advanced Analysis frontend now renders the returned backend JSON directly as interactive-style canvas plots instead of relying on hidden NeuroMouse conditional panels.
-
-## v0.11.14 Higuchi-first Advanced Analysis GUI
-
-This version makes the new backend Higuchi Fractal Dimension workflow visibly first-class in the web GUI. Advanced Analysis now opens on a dedicated Higuchi card with a direct run button, mode selector, segment fields, and frontend-rendered plots. The older NeuroMouse Polar/Kuramoto/Network/TDA experiments remain available under a collapsed legacy section so they do not obscure the working Higuchi workflow.
-
-
-## v0.11.14 Simplified dashboard + embedded fractal dimension
-
-- Default GUI now opens to a small dashboard with five primary actions: upload/convert, compare two dataset groups, open normal NeuroMouse, run Higuchi fractal dimension, and run embedded attractor fractal dimension.
-- Extra tabs are hidden behind a **More options** button to avoid overwhelming first-time users.
-- Added native backend method `embedded_fractal_dimension`, adapted from the embedded fractal-dimension research script. It computes box-counting FD and sampled Grassberger-Procaccia correlation dimension D2 across 2D–10D attractor embeddings, using precomputed embedding files when available or generated delay embeddings from `signal.npy`.
-- Embedded FD results are plotted directly in the frontend: D2/box curves, mean dimensions, heatmaps, channel complexity ranking, D2-vs-box scatter, fit quality control, and diagnostic fit plots.
+The method also writes `iaaft_mfdfa_summary.csv`, `iaaft_mfdfa_widths_long.csv`, per-channel `.npz` files, and a text summary.

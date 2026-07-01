@@ -8,7 +8,7 @@ def test_v01114_gui_has_simple_home_and_analysis_workflows():
     app_js = Path("neuro_signal_webapp/static/app.js").read_text(encoding="utf-8")
     css = Path("neuro_signal_webapp/static/styles.css").read_text(encoding="utf-8")
 
-    assert "v0.11.15 — Minimal Dashboard" in index
+    assert "v0.11.32 — Minimal Dashboard" in index
     assert "homeTab" in index
     assert "higuchiTab" in index
     assert "higuchiDirectCard" in index

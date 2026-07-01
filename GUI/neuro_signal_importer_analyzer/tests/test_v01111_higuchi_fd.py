@@ -85,4 +85,4 @@ def test_higuchi_frontend_renderer_is_packaged():
     index_html = Path("neuro_signal_webapp/static/index.html").read_text(encoding="utf-8")
     assert "renderHiguchiFdPlots" in app_js
     assert "higuchi_fractal_dimension" in app_js
-    assert "0.11.15-minimal-fractal" in index_html
+    assert "0.11.32-neuromouse-choice" in index_html
